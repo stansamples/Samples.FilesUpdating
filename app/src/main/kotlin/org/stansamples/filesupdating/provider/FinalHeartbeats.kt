@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.GetActualFilePartException
+import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.entity.Secrets
@@ -93,10 +94,15 @@ internal class FinalHeartbeats(
         var index = dst.length()
         val partSize = 64_000_000L
         while (true) {
+            if (!_started.value) throw HeartbeatsStoppedException()
             val response = try {
                 remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
             } catch (error: Throwable) {
-                throw GetActualFilePartException(cause = error)
+                when (error) {
+                    is TooManyRequestsException -> throw error
+                    is RangeNotSatisfiableException -> throw error
+                    else -> throw GetActualFilePartException(cause = error)
+                }
             }
             val contentLength = response.body.use { body ->
                 write(body = body, dst = dst)
@@ -145,8 +151,11 @@ internal class FinalHeartbeats(
         try {
             download(id = pu.id, dst = tmp)
         } catch (error: Throwable) {
-            if (error !is GetActualFilePartException || error.cause is RangeNotSatisfiableException) {
-                tmp.delete()
+            when (error) {
+                is HeartbeatsStoppedException,
+                is TooManyRequestsException,
+                is GetActualFilePartException -> Unit
+                else -> tmp.delete()
             }
             return null
         } finally {
@@ -164,6 +173,7 @@ internal class FinalHeartbeats(
         logger.debug("heartbeat request...")
         val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
+            if (!_started.value) return
             logger.debug("updating package: $pu")
             val file = runCatching {
                 updatePackage(pu = pu)
