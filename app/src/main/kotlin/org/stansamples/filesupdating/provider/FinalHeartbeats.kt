@@ -36,7 +36,7 @@ internal class FinalHeartbeats(
     private val logger = loggers.create("[Heartbeats]")
     private val serialNumber = "foobarbaz" // todo
     private val ttl = 8.seconds // todo
-    private var requested: Duration? = null
+    private var _requested: Duration? = null
     private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
     val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
@@ -48,7 +48,7 @@ internal class FinalHeartbeats(
                 _started.drop(1).collect { newState ->
                     logger.debug("started: $newState")
                     if (newState) {
-                        requested = null
+                        _requested = null
                         job = coroutineScope.launch {
                             withContext(contexts.default) {
                                 while (_started.value) {
@@ -101,7 +101,7 @@ internal class FinalHeartbeats(
         val partSize = 64_000_000L
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
-            val requested = requested
+            val requested = _requested
             if (requested != null && times.elapsed(requested) > ttl) {
                 throw HeartbeatsTTLException()
             }
@@ -181,10 +181,12 @@ internal class FinalHeartbeats(
 
     private fun heartbeat() {
         logger.debug("heartbeat request...")
-        requested = times.now()
+        val requested = times.now()
+        _requested = requested
         val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
+            if (requested > ttl) return
             logger.debug("updating package: $pu")
             val file = runCatching {
                 updatePackage(pu = pu)
