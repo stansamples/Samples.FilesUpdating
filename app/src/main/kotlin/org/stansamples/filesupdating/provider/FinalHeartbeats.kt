@@ -10,9 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.stansamples.filesupdating.entity.HeartbeatResponse
+import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.PackageUpdate
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
@@ -54,6 +57,52 @@ internal class FinalHeartbeats(
         }
     }
 
+    private fun OutputStream.write(src: InputStream): Long {
+        val buffer = ByteArray(8_192)
+        var read = 0L
+        while (true) {
+            val length = src.read(buffer)
+            if (length < 0) break
+            write(buffer, 0, length)
+            read += length
+        }
+        flush()
+        return read
+    }
+
+    private fun write(body: CloseableBody, dst: File): Long {
+        if (body.contentLength < 0) {
+            error("update negative content length")
+        }
+        val read = FileOutputStream(dst, true).use { dst ->
+            dst.write(src = body.src)
+        }
+        if (read != body.contentLength) {
+            error("update wrong read length")
+        }
+        return body.contentLength
+    }
+
+    private fun download(id: String, dst: File) {
+        var index = dst.length()
+        val partSize = 64_000_000L
+        while (true) {
+            val response = remotes.getActualFilePart(id = id, range = LongRange(index, index + partSize - 1))
+            val contentLength = response.body.use { body ->
+                write(body = body, dst = dst)
+            }
+            index += contentLength
+            val read = dst.length()
+            if (read > response.fullLength) {
+                error("update wrong full length")
+            }
+            if (read == response.fullLength) return
+            if (contentLength == 0L) {
+                error("update wrong content length")
+            }
+        }
+    }
+
     private fun commit(file: File, target: File) {
         TODO("commit($file, $target)")
     }
@@ -66,12 +115,12 @@ internal class FinalHeartbeats(
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
-            error("update ${pu.packageName} cannot delete old target")
+            error("update cannot delete old target")
         }
-        val file = dir.resolve("${pu.id}.apk")
-        TODO("updatePackage($pu)")
+        val tmp = dir.resolve("${pu.id}.apk")
+        download(id = pu.id, dst = tmp)
         remotes.dequeue(id = pu.id)
-        commit(file = file, target = target)
+        commit(file = tmp, target = target)
         install(file = target)
     }
 
