@@ -1,21 +1,31 @@
 package org.stansamples.filesupdating
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.provider.Contexts
+import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLoggers
+import org.stansamples.filesupdating.provider.Heartbeats
 import org.stansamples.filesupdating.provider.Loggers
-import org.stansamples.filesupdating.provider.Providers
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val contexts = Contexts(
-        main = Dispatchers.Main,
+        main = Dispatchers.Default,
         default = Dispatchers.Default,
     )
     val loggers: Loggers = FinalLoggers()
-    val providers = Providers(
+    val heartbeats: Heartbeats = FinalHeartbeats(
         contexts = contexts,
         loggers = loggers,
     )
-    val logger = loggers.create("[App]")
-    logger.debug("Hello files updating!")
+    runBlocking {
+        withContext(contexts.default) {
+            heartbeats.start()
+            delay(30.seconds)
+            heartbeats.stop()
+        }
+    }
 }
