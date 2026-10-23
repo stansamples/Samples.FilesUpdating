@@ -135,8 +135,15 @@ internal class FinalHeartbeats(
             error("update cannot delete old target")
         }
         val tmp = getPackageFile(dir = dir, id = pu.id)
-        download(id = pu.id, dst = tmp)
-        remotes.dequeue(serialNumber = serialNumber, id = pu.id)
+        try {
+            download(id = pu.id, dst = tmp)
+        } finally {
+            runCatching {
+                remotes.dequeue(serialNumber = serialNumber, id = pu.id)
+            }.onFailure { error ->
+                logger.warning("dequeue error: $error")
+            }
+        }
         commit(tmp = tmp, target = target, sha256 = pu.sha256)
         install(file = target)
     }
