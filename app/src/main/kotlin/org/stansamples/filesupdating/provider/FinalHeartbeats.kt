@@ -27,6 +27,7 @@ internal class FinalHeartbeats(
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
+    private val serialNumber = "foobarbaz" // todo
     private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
     val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
@@ -89,7 +90,7 @@ internal class FinalHeartbeats(
         var index = dst.length()
         val partSize = 64_000_000L
         while (true) {
-            val response = remotes.getActualFilePart(id = id, range = LongRange(index, index + partSize - 1))
+            val response = remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
             val contentLength = response.body.use { body ->
                 write(body = body, dst = dst)
             }
@@ -120,22 +121,29 @@ internal class FinalHeartbeats(
         TODO("install($file)")
     }
 
+    private fun getPackageFile(dir: File, id: String): File {
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) TODO()
+        }
+        return dir.resolve("${id}.apk")
+    }
+
     private fun updatePackage(pu: PackageUpdate) {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
             error("update cannot delete old target")
         }
-        val tmp = dir.resolve("${pu.id}.apk")
+        val tmp = getPackageFile(dir = dir, id = pu.id)
         download(id = pu.id, dst = tmp)
-        remotes.dequeue(id = pu.id)
+        remotes.dequeue(serialNumber = serialNumber, id = pu.id)
         commit(tmp = tmp, target = target, sha256 = pu.sha256)
         install(file = target)
     }
 
     private fun heartbeat() {
         logger.debug("heartbeat request...")
-        val response = remotes.heartbeat()
+        val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
             logger.debug("updating package: $pu")
             try {
