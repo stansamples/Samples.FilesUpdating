@@ -1,0 +1,7 @@
+package org.stansamples.filesupdating.entity
+
+import java.io.InputStream
+
+internal interface Secrets {
+    fun sha256(src: InputStream): ByteArray
+}

@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.PackageUpdate
+import org.stansamples.filesupdating.entity.Secrets
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -22,6 +23,7 @@ internal class FinalHeartbeats(
     private val contexts: Contexts,
     private val dirs: Dirs,
     private val remotes: Remotes,
+    private val secrets: Secrets,
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
@@ -103,8 +105,15 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun commit(file: File, target: File) {
-        TODO("commit($file, $target)")
+    private fun commit(tmp: File, target: File, sha256: ByteArray) {
+        if (!tmp.inputStream().use(secrets::sha256).contentEquals(sha256)) {
+            tmp.delete()
+            error("update hash error")
+        }
+        if (!tmp.renameTo(target)) {
+            tmp.delete()
+            error("update target error")
+        }
     }
 
     private fun install(file: File) {
@@ -120,7 +129,7 @@ internal class FinalHeartbeats(
         val tmp = dir.resolve("${pu.id}.apk")
         download(id = pu.id, dst = tmp)
         remotes.dequeue(id = pu.id)
-        commit(file = tmp, target = target)
+        commit(tmp = tmp, target = target, sha256 = pu.sha256)
         install(file = target)
     }
 
