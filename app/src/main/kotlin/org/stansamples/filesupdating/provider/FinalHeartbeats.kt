@@ -129,7 +129,7 @@ internal class FinalHeartbeats(
         return dir.resolve("${id}.apk")
     }
 
-    private fun updatePackage(pu: PackageUpdate) {
+    private fun updatePackage(pu: PackageUpdate): File? {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
@@ -139,7 +139,7 @@ internal class FinalHeartbeats(
         try {
             download(id = pu.id, dst = tmp)
         } catch (_: TooManyRequestsException) {
-            return
+            return null
         } finally {
             runCatching {
                 remotes.dequeue(serialNumber = serialNumber, id = pu.id)
@@ -148,7 +148,7 @@ internal class FinalHeartbeats(
             }
         }
         commit(tmp = tmp, target = target, sha256 = pu.sha256)
-        install(file = target)
+        return target
     }
 
     private fun heartbeat() {
@@ -156,10 +156,15 @@ internal class FinalHeartbeats(
         val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
             logger.debug("updating package: $pu")
-            try {
+            val file = runCatching {
                 updatePackage(pu = pu)
+            }.onFailure { error ->
+                logger.warning("updating package error: $error")
+            }.getOrNull() ?: continue
+            try {
+                install(file = file)
             } catch (error: Throwable) {
-                logger.warning("updating package $pu error: $error")
+                logger.warning("install package error: $error")
                 continue
             }
         }
