@@ -12,11 +12,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.HeartbeatResponse
 import org.stansamples.filesupdating.entity.PackageUpdate
+import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
     private val contexts: Contexts,
     private val dirs: Dirs,
+    private val remotes: Remotes,
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
@@ -52,10 +54,12 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun request(): HeartbeatResponse {
-        return HeartbeatResponse(
-            needsPackagesUpdate = emptyList(), // todo
-        )
+    private fun commit(file: File, target: File) {
+        TODO("commit($file, $target)")
+    }
+
+    private fun install(file: File) {
+        TODO("install($file)")
     }
 
     private fun updatePackage(pu: PackageUpdate) {
@@ -66,11 +70,14 @@ internal class FinalHeartbeats(
         }
         val file = dir.resolve("${pu.id}.apk")
         TODO("updatePackage($pu)")
+        remotes.dequeue(id = pu.id)
+        commit(file = file, target = target)
+        install(file = target)
     }
 
     private fun heartbeat() {
         logger.debug("heartbeat request...")
-        val response = request()
+        val response = remotes.heartbeat()
         for (pu in response.needsPackagesUpdate) {
             logger.debug("updating package: $pu")
             try {
