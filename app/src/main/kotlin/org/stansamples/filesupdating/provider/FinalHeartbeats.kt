@@ -10,10 +10,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.stansamples.filesupdating.entity.HeartbeatResponse
+import org.stansamples.filesupdating.entity.PackageUpdate
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
     private val contexts: Contexts,
+    private val dirs: Dirs,
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
@@ -49,8 +52,34 @@ internal class FinalHeartbeats(
         }
     }
 
+    private fun request(): HeartbeatResponse {
+        return HeartbeatResponse(
+            needsPackagesUpdate = emptyList(), // todo
+        )
+    }
+
+    private fun updatePackage(pu: PackageUpdate) {
+        val dir = dirs.cache.resolve("packages")
+        val target = dir.resolve("target.apk")
+        if (target.exists() && !target.delete()) {
+            error("update ${pu.packageName} cannot delete old target")
+        }
+        val file = dir.resolve("${pu.id}.apk")
+        TODO("updatePackage($pu)")
+    }
+
     private fun heartbeat() {
         logger.debug("heartbeat request...")
+        val response = request()
+        for (pu in response.needsPackagesUpdate) {
+            logger.debug("updating package: $pu")
+            try {
+                updatePackage(pu = pu)
+            } catch (error: Throwable) {
+                logger.warning("updating package $pu error: $error")
+                continue
+            }
+        }
     }
 
     override fun start() {

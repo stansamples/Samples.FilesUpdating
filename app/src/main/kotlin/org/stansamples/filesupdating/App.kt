@@ -5,6 +5,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.provider.Contexts
+import org.stansamples.filesupdating.provider.Dirs
+import org.stansamples.filesupdating.provider.FinalDirs
 import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLoggers
 import org.stansamples.filesupdating.provider.Heartbeats
@@ -16,15 +18,17 @@ fun main() {
         main = Dispatchers.Default,
         default = Dispatchers.Default,
     )
+    val dirs: Dirs = FinalDirs()
     val loggers: Loggers = FinalLoggers()
     val heartbeats: Heartbeats = FinalHeartbeats(
         contexts = contexts,
+        dirs = dirs,
         loggers = loggers,
     )
     runBlocking {
         withContext(contexts.default) {
             heartbeats.start()
-            delay(30.seconds)
+            delay(20.seconds)
             heartbeats.stop()
         }
     }
