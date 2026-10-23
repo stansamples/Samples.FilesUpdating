@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.CloseableBody
+import org.stansamples.filesupdating.entity.GetActualFilePartException
 import org.stansamples.filesupdating.entity.PackageUpdate
+import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.entity.Secrets
 import org.stansamples.filesupdating.entity.TooManyRequestsException
 import java.io.File
@@ -91,7 +93,11 @@ internal class FinalHeartbeats(
         var index = dst.length()
         val partSize = 64_000_000L
         while (true) {
-            val response = remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
+            val response = try {
+                remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
+            } catch (error: Throwable) {
+                throw GetActualFilePartException(cause = error)
+            }
             val contentLength = response.body.use { body ->
                 write(body = body, dst = dst)
             }
@@ -138,7 +144,10 @@ internal class FinalHeartbeats(
         val tmp = getPackageFile(dir = dir, id = pu.id)
         try {
             download(id = pu.id, dst = tmp)
-        } catch (_: TooManyRequestsException) {
+        } catch (error: Throwable) {
+            if (error !is GetActualFilePartException || error.cause is RangeNotSatisfiableException) {
+                tmp.delete()
+            }
             return null
         } finally {
             runCatching {
