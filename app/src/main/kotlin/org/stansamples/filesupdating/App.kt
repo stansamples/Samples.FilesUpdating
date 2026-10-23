@@ -12,9 +12,11 @@ import org.stansamples.filesupdating.provider.FinalDirs
 import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLoggers
 import org.stansamples.filesupdating.provider.FinalRemotes
+import org.stansamples.filesupdating.provider.FinalTimes
 import org.stansamples.filesupdating.provider.Heartbeats
 import org.stansamples.filesupdating.provider.Loggers
 import org.stansamples.filesupdating.provider.Remotes
+import org.stansamples.filesupdating.provider.Times
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -26,11 +28,13 @@ fun main() {
     val loggers: Loggers = FinalLoggers()
     val remotes: Remotes = FinalRemotes()
     val secrets: Secrets = FinalSecrets()
+    val times: Times = FinalTimes()
     val heartbeats: Heartbeats = FinalHeartbeats(
         contexts = contexts,
         dirs = dirs,
         remotes = remotes,
         secrets = secrets,
+        times = times,
         loggers = loggers,
     )
     runBlocking {
