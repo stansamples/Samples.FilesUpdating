@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.GetActualFilePartException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
+import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.entity.Secrets
@@ -21,6 +22,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
@@ -28,10 +30,13 @@ internal class FinalHeartbeats(
     private val dirs: Dirs,
     private val remotes: Remotes,
     private val secrets: Secrets,
+    private val times: Times,
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
     private val serialNumber = "foobarbaz" // todo
+    private val ttl = 8.seconds // todo
+    private var requested: Duration? = null
     private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
     val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
@@ -43,6 +48,7 @@ internal class FinalHeartbeats(
                 _started.drop(1).collect { newState ->
                     logger.debug("started: $newState")
                     if (newState) {
+                        requested = null
                         job = coroutineScope.launch {
                             withContext(contexts.default) {
                                 while (_started.value) {
@@ -52,7 +58,7 @@ internal class FinalHeartbeats(
                                         logger.warning("heartbeat error: $error")
                                         _started.value = false
                                     }
-                                    delay(8.seconds)
+                                    delay(ttl)
                                 }
                             }
                         }
@@ -95,6 +101,10 @@ internal class FinalHeartbeats(
         val partSize = 64_000_000L
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
+            val requested = requested
+            if (requested != null && times.elapsed(requested) > ttl) {
+                throw HeartbeatsTTLException()
+            }
             val response = try {
                 remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
             } catch (error: Throwable) {
@@ -152,7 +162,7 @@ internal class FinalHeartbeats(
             download(id = pu.id, dst = tmp)
         } catch (error: Throwable) {
             when (error) {
-                is HeartbeatsStoppedException,
+                is HeartbeatsTTLException,
                 is TooManyRequestsException,
                 is GetActualFilePartException -> Unit
                 else -> tmp.delete()
@@ -171,6 +181,7 @@ internal class FinalHeartbeats(
 
     private fun heartbeat() {
         logger.debug("heartbeat request...")
+        requested = times.now()
         val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
