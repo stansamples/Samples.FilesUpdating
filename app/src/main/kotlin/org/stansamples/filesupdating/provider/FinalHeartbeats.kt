@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.Secrets
+import org.stansamples.filesupdating.entity.TooManyRequestsException
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -137,6 +138,8 @@ internal class FinalHeartbeats(
         val tmp = getPackageFile(dir = dir, id = pu.id)
         try {
             download(id = pu.id, dst = tmp)
+        } catch (_: TooManyRequestsException) {
+            return
         } finally {
             runCatching {
                 remotes.dequeue(serialNumber = serialNumber, id = pu.id)
