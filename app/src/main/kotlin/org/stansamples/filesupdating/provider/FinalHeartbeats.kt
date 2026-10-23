@@ -52,13 +52,14 @@ internal class FinalHeartbeats(
                         job = coroutineScope.launch {
                             withContext(contexts.default) {
                                 while (_started.value) {
+                                    val timeStart = times.now()
                                     try {
                                         heartbeat()
                                     } catch (error: Throwable) {
                                         logger.warning("heartbeat error: $error")
                                         _started.value = false
                                     }
-                                    delay(ttl)
+                                    delay(ttl - times.elapsed(timeStart = timeStart))
                                 }
                             }
                         }
@@ -186,7 +187,7 @@ internal class FinalHeartbeats(
         val response = remotes.heartbeat(serialNumber = serialNumber)
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
-            if (requested > ttl) return
+            if (times.elapsed(requested) > ttl) return
             logger.debug("updating package: $pu")
             val file = runCatching {
                 updatePackage(pu = pu)
