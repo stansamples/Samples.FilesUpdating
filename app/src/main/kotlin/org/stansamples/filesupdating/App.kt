@@ -9,11 +9,13 @@ import org.stansamples.filesupdating.provider.Dirs
 import org.stansamples.filesupdating.provider.FinalDirs
 import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLoggers
+import org.stansamples.filesupdating.provider.FinalPackages
 import org.stansamples.filesupdating.provider.FinalRemotes
 import org.stansamples.filesupdating.provider.FinalSecrets
 import org.stansamples.filesupdating.provider.FinalTimes
 import org.stansamples.filesupdating.provider.Heartbeats
 import org.stansamples.filesupdating.provider.Loggers
+import org.stansamples.filesupdating.provider.Packages
 import org.stansamples.filesupdating.provider.Remotes
 import org.stansamples.filesupdating.provider.Secrets
 import org.stansamples.filesupdating.provider.Times
@@ -29,6 +31,7 @@ fun main() {
     val remotes: Remotes = FinalRemotes()
     val secrets: Secrets = FinalSecrets()
     val times: Times = FinalTimes()
+    val packages: Packages = FinalPackages()
     val heartbeats: Heartbeats = FinalHeartbeats(
         contexts = contexts,
         dirs = dirs,
@@ -36,11 +39,12 @@ fun main() {
         secrets = secrets,
         times = times,
         loggers = loggers,
+        packages = packages,
     )
     runBlocking {
         withContext(contexts.default) {
             heartbeats.start()
-            delay(20.seconds)
+            delay(10.seconds)
             heartbeats.stop()
         }
     }

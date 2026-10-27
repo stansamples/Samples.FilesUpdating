@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import org.stansamples.filesupdating.entity.AppInfo
 import org.stansamples.filesupdating.entity.GetActualFilePartException
+import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequestException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
@@ -25,6 +27,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
     private val dirs: Dirs,
+    private val packages: Packages,
     private val remotes: Remotes,
     private val secrets: Secrets,
     private val times: Times,
@@ -33,7 +36,8 @@ internal class FinalHeartbeats(
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
     private val serialNumber = "foobarbaz" // todo
-    private val ttl = 8.seconds // todo
+    private val ttl = 4.seconds // todo
+    private var _apps = listOf<AppInfo>()
     private var _requested: Duration? = null
     private var _updated: Duration? = null
     private val _started = MutableStateFlow(false)
@@ -149,10 +153,6 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun install(file: File): String {
-        TODO("install($file)")
-    }
-
     private fun getPackageFile(dir: File, id: String): File {
         if (!dir.exists()) {
             if (!dir.mkdirs()) TODO()
@@ -192,16 +192,30 @@ internal class FinalHeartbeats(
         return target
     }
 
+    private fun updateApps(packageNames: Set<String>) {
+        val apps = _apps.toMutableList()
+        for (packageName in packageNames) {
+            apps += try {
+                packages.getAppInfo(packageName = packageName)
+            } catch (error: Throwable) {
+                logger.warning("get info $packageName error: $error")
+                continue
+            }
+        }
+        _apps = apps
+    }
+
     private fun heartbeat() {
         logger.debug("heartbeat request...")
         val requested = times.now()
         _requested = requested
         val response = try {
-            remotes.heartbeat(serialNumber = serialNumber)
+            remotes.heartbeat(HeartbeatRequest(serialNumber = serialNumber, apps = _apps))
         } catch (error: Throwable) {
             throw HeartbeatRequestException(cause = error)
         }
         _updated = times.now()
+        val packageNames = mutableSetOf<String>()
         for (pu in response.needsPackagesUpdate) {
             _states.value = Heartbeats.State.Updating
             if (!_started.value) return
@@ -214,13 +228,14 @@ internal class FinalHeartbeats(
                 continue
             } ?: continue
             _states.value = Heartbeats.State.InstallingPackage
-            val packageName = try {
-                install(file = file)
+            packageNames += try {
+                packages.install(file = file)
             } catch (error: Throwable) {
                 logger.warning("install package error: $error")
                 continue
             }
         }
+        updateApps(packageNames = packageNames)
         _states.value = Heartbeats.State.Waiting(updated = _updated)
     }
 

@@ -1,10 +1,11 @@
 package org.stansamples.filesupdating.provider
 
 import org.stansamples.filesupdating.entity.GetActualFilePartResponse
+import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatResponse
 
 internal class FinalRemotes : Remotes {
-    override fun heartbeat(serialNumber: String): HeartbeatResponse {
+    override fun heartbeat(request: HeartbeatRequest): HeartbeatResponse {
         return HeartbeatResponse(
             needsPackagesUpdate = emptyList(), // todo
         )
