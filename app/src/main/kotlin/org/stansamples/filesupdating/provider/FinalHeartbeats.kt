@@ -131,11 +131,9 @@ internal class FinalHeartbeats(
 
     private fun commit(tmp: File, target: File, sha256: ByteArray) {
         if (!tmp.inputStream().use(secrets::sha256).contentEquals(sha256)) {
-            tmp.delete()
             error("update hash error")
         }
         if (!tmp.renameTo(target)) {
-            tmp.delete()
             error("update target error")
         }
     }
@@ -169,13 +167,17 @@ internal class FinalHeartbeats(
             }
             return null
         } finally {
-            runCatching {
+            try {
                 remotes.dequeue(serialNumber = serialNumber, id = pu.id)
-            }.onFailure { error ->
+            } catch (error: Throwable) {
                 logger.warning("dequeue error: $error")
             }
         }
-        commit(tmp = tmp, target = target, sha256 = pu.sha256)
+        try {
+            commit(tmp = tmp, target = target, sha256 = pu.sha256)
+        } finally {
+            tmp.delete()
+        }
         return target
     }
 
@@ -188,11 +190,12 @@ internal class FinalHeartbeats(
             if (!_started.value) return
             if (times.elapsed(requested) > ttl) return
             logger.debug("updating package: $pu")
-            val file = runCatching {
+            val file = try {
                 updatePackage(pu = pu)
-            }.onFailure { error ->
+            } catch (error: Throwable) {
                 logger.warning("updating package error: $error")
-            }.getOrNull() ?: continue
+                continue
+            } ?: continue
             try {
                 install(file = file)
             } catch (error: Throwable) {
