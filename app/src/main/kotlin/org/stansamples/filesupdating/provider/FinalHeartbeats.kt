@@ -149,7 +149,7 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun install(file: File) {
+    private fun install(file: File): String {
         TODO("install($file)")
     }
 
@@ -160,7 +160,7 @@ internal class FinalHeartbeats(
         return dir.resolve("${id}.apk")
     }
 
-    private fun updatePackage(pu: PackageUpdate): File? {
+    private fun download(pu: PackageUpdate): File? {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
@@ -208,13 +208,13 @@ internal class FinalHeartbeats(
             if (times.elapsed(requested) > ttl) return
             logger.debug("updating package: $pu")
             val file = try {
-                updatePackage(pu = pu)
+                download(pu = pu)
             } catch (error: Throwable) {
-                logger.warning("updating package error: $error")
+                logger.warning("download package error: $error")
                 continue
             } ?: continue
             _states.value = Heartbeats.State.InstallingPackage
-            try {
+            val packageName = try {
                 install(file = file)
             } catch (error: Throwable) {
                 logger.warning("install package error: $error")
