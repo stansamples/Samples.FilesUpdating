@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.stansamples.filesupdating.entity.GetActualFilePartException
+import org.stansamples.filesupdating.entity.HeartbeatRequestException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.PackageUpdate
@@ -34,8 +35,11 @@ internal class FinalHeartbeats(
     private val serialNumber = "foobarbaz" // todo
     private val ttl = 8.seconds // todo
     private var _requested: Duration? = null
+    private var _updated: Duration? = null
     private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
+    private val _states = MutableStateFlow<Heartbeats.State>(Heartbeats.State.Stopped)
+    override val states = _states.asStateFlow()
     private val coroutineScope = CoroutineScope(contexts.default + SupervisorJob())
 
     init {
@@ -45,20 +49,29 @@ internal class FinalHeartbeats(
                 logger.debug("started: $newState")
                 if (newState) {
                     _requested = null
+                    _updated = null
                     job = coroutineScope.launch {
                         while (_started.value) {
+                            _states.value = Heartbeats.State.Updating
                             val timeStart = times.now()
                             try {
                                 heartbeat()
                             } catch (error: Throwable) {
                                 logger.warning("heartbeat error: $error")
-                                _started.value = false
+                                if (error is HeartbeatRequestException) {
+                                    _states.value = Heartbeats.State.Waiting(updated = _updated)
+                                } else {
+                                    _started.value = false
+                                }
                             }
-                            delay(ttl - times.elapsed(timeStart = timeStart))
+                            if (_started.value && _states.value is Heartbeats.State.Waiting) {
+                                delay(ttl - times.elapsed(timeStart = timeStart))
+                            }
                         }
                     }
                 } else {
                     job?.cancelAndJoin()
+                    _states.value = Heartbeats.State.Stopped
                 }
             }
         }
@@ -179,7 +192,12 @@ internal class FinalHeartbeats(
         logger.debug("heartbeat request...")
         val requested = times.now()
         _requested = requested
-        val response = remotes.heartbeat(serialNumber = serialNumber)
+        val response = try {
+            remotes.heartbeat(serialNumber = serialNumber)
+        } catch (error: Throwable) {
+            throw HeartbeatRequestException(cause = error)
+        }
+        _updated = times.now()
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
             if (times.elapsed(requested) > ttl) return
@@ -197,6 +215,7 @@ internal class FinalHeartbeats(
                 continue
             }
         }
+        _states.value = Heartbeats.State.Waiting(updated = _updated)
     }
 
     override fun start() {

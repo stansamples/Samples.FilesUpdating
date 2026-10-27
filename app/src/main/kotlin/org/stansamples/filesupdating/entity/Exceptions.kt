@@ -9,3 +9,5 @@ internal class GetActualFilePartException(cause: Throwable) : Exception(cause)
 internal class HeartbeatsStoppedException : Exception()
 
 internal class HeartbeatsTTLException : Exception()
+
+internal class HeartbeatRequestException(cause: Throwable) : Exception(cause)
