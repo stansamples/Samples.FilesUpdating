@@ -1,4 +1,4 @@
-package org.stansamples.filesupdating.entity
+package org.stansamples.filesupdating.provider
 
 import java.io.InputStream
 import java.security.MessageDigest

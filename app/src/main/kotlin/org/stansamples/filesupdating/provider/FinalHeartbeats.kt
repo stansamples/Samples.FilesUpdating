@@ -16,7 +16,6 @@ import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
-import org.stansamples.filesupdating.entity.Secrets
 import org.stansamples.filesupdating.entity.TooManyRequestsException
 import java.io.File
 import java.io.FileOutputStream

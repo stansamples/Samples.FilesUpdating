@@ -4,18 +4,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.stansamples.filesupdating.entity.FinalSecrets
-import org.stansamples.filesupdating.entity.Secrets
 import org.stansamples.filesupdating.provider.Contexts
 import org.stansamples.filesupdating.provider.Dirs
 import org.stansamples.filesupdating.provider.FinalDirs
 import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLoggers
 import org.stansamples.filesupdating.provider.FinalRemotes
+import org.stansamples.filesupdating.provider.FinalSecrets
 import org.stansamples.filesupdating.provider.FinalTimes
 import org.stansamples.filesupdating.provider.Heartbeats
 import org.stansamples.filesupdating.provider.Loggers
 import org.stansamples.filesupdating.provider.Remotes
+import org.stansamples.filesupdating.provider.Secrets
 import org.stansamples.filesupdating.provider.Times
 import kotlin.time.Duration.Companion.seconds
 
