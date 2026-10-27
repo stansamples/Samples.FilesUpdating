@@ -161,12 +161,10 @@ internal class FinalHeartbeats(
             }
             return null
         } finally {
-            coroutineScope.launch {
-                try {
-                    remotes.dequeue(serialNumber = serialNumber, id = pu.id)
-                } catch (error: Throwable) {
-                    logger.warning("dequeue error: $error")
-                }
+            try {
+                remotes.dequeue(serialNumber = serialNumber, id = pu.id)
+            } catch (error: Throwable) {
+                logger.warning("dequeue error: $error")
             }
         }
         try {
