@@ -93,11 +93,12 @@ internal class FinalHeartbeats(
         if (read != body.contentLength) {
             error("update wrong read length")
         }
-        return body.contentLength
+        return read
     }
 
     private fun download(id: String, dst: File) {
-        var index = dst.length()
+        var _index = dst.length()
+        var _fullLength: Long? = null
         val partSize = 64_000_000L
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
@@ -105,7 +106,7 @@ internal class FinalHeartbeats(
             if (requested != null && times.elapsed(requested) > ttl) {
                 throw HeartbeatsTTLException()
             }
-            val range = LongRange(index, index + partSize - 1)
+            val range = LongRange(_index, _index + partSize - 1)
             if (range.isEmpty()) error("empty range!")
             val response = try {
                 remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = range)
@@ -116,12 +117,17 @@ internal class FinalHeartbeats(
                     else -> throw GetActualFilePartException(cause = error)
                 }
             }
-            index += response.body.use { body ->
+            if (_fullLength == null) {
+                _fullLength = response.fullLength
+            } else if (response.fullLength != _fullLength) {
+                error("update wrong full length")
+            }
+            _index += response.body.use { body ->
                 write(body = body, dst = dst)
             }
             val read = dst.length()
             if (read > response.fullLength) {
-                error("update wrong full length")
+                error("update wrong read length")
             }
             if (read == response.fullLength) return
         }
