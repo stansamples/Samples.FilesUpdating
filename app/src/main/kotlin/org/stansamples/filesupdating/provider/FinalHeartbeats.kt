@@ -133,6 +133,10 @@ internal class FinalHeartbeats(
                 error("download wrong read length")
             }
             if (read == response.fullLength) return
+            _states.value = Heartbeats.State.DownloadingFile(
+                contentLength = response.fullLength,
+                read = read,
+            )
         }
     }
 

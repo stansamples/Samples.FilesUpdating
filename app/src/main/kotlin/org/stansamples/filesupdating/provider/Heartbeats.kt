@@ -7,6 +7,10 @@ internal interface Heartbeats {
     sealed interface State {
         data object Updating : State
         data object Stopped : State
+        data class DownloadingFile(
+            val contentLength: Long,
+            val read: Long,
+        ) : State
         class Waiting(val updated: Duration?) : State {
             override fun toString(): String {
                 return "Waiting(updated: ${updated?.inWholeMilliseconds})"
