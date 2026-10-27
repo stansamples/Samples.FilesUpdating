@@ -193,7 +193,7 @@ internal class FinalHeartbeats(
     }
 
     private fun updateApps(packageNames: Set<String>) {
-        val apps = _apps.toMutableList()
+        val apps = mutableListOf<AppInfo>()
         for (packageName in packageNames) {
             apps += try {
                 packages.getAppInfo(packageName = packageName)
@@ -206,6 +206,8 @@ internal class FinalHeartbeats(
     }
 
     private fun heartbeat() {
+        val packageNames = _apps.map { it.packageName }.toMutableSet()
+        updateApps(packageNames = packageNames)
         logger.debug("heartbeat request...")
         val requested = times.now()
         _requested = requested
@@ -215,7 +217,6 @@ internal class FinalHeartbeats(
             throw HeartbeatRequestException(cause = error)
         }
         _updated = times.now()
-        val packageNames = mutableSetOf<String>()
         for (pu in response.needsPackagesUpdate) {
             _states.value = Heartbeats.State.Updating
             if (!_started.value) return
