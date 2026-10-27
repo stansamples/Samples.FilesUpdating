@@ -222,14 +222,16 @@ internal class FinalHeartbeats(
             if (times.elapsed(requested) > ttl) return
             _states.value = Heartbeats.State.Updating
             logger.debug("updating package: $pu")
-            val appInfo = try {
-                packages.getAppInfo(packageName = pu.packageName)
-            } catch (_: Throwable) {
-                null
-            }
-            if (appInfo != null && pu.version == "${appInfo.versionName}-${appInfo.versionCode}") {
-                packageNames += appInfo.packageName
-                continue
+            if (!packageNames.contains(pu.packageName)) {
+                val appInfo = try {
+                    packages.getAppInfo(packageName = pu.packageName)
+                } catch (_: Throwable) {
+                    null
+                }
+                if (appInfo != null && pu.version == "${appInfo.versionName}-${appInfo.versionCode}") {
+                    packageNames += appInfo.packageName
+                    continue
+                }
             }
             val file = try {
                 download(pu = pu)
