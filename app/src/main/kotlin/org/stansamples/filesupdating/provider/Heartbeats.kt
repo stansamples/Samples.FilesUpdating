@@ -11,6 +11,7 @@ internal interface Heartbeats {
             val contentLength: Long,
             val read: Long,
         ) : State
+        data object InstallingPackage : State
         class Waiting(val updated: Duration?) : State {
             override fun toString(): String {
                 return "Waiting(updated: ${updated?.inWholeMilliseconds})"

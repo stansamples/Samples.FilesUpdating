@@ -132,11 +132,11 @@ internal class FinalHeartbeats(
             if (read > response.fullLength) {
                 error("download wrong read length")
             }
-            if (read == response.fullLength) return
             _states.value = Heartbeats.State.DownloadingFile(
                 contentLength = response.fullLength,
                 read = read,
             )
+            if (read == response.fullLength) return
         }
     }
 
@@ -203,6 +203,7 @@ internal class FinalHeartbeats(
         }
         _updated = times.now()
         for (pu in response.needsPackagesUpdate) {
+            _states.value = Heartbeats.State.Updating
             if (!_started.value) return
             if (times.elapsed(requested) > ttl) return
             logger.debug("updating package: $pu")
@@ -212,6 +213,7 @@ internal class FinalHeartbeats(
                 logger.warning("updating package error: $error")
                 continue
             } ?: continue
+            _states.value = Heartbeats.State.InstallingPackage
             try {
                 install(file = file)
             } catch (error: Throwable) {
