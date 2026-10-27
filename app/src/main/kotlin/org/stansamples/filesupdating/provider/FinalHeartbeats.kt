@@ -84,8 +84,8 @@ internal class FinalHeartbeats(
     }
 
     private fun write(body: CloseableBody, dst: File): Long {
-        if (body.contentLength < 0) {
-            error("update negative content length")
+        if (body.contentLength <= 0) {
+            error("update wrong content length")
         }
         val read = FileOutputStream(dst, true).use { dst ->
             dst.write(src = body.src)
@@ -105,8 +105,10 @@ internal class FinalHeartbeats(
             if (requested != null && times.elapsed(requested) > ttl) {
                 throw HeartbeatsTTLException()
             }
+            val range = LongRange(index, index + partSize - 1)
+            if (range.isEmpty()) error("empty range!")
             val response = try {
-                remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = LongRange(index, index + partSize - 1))
+                remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = range)
             } catch (error: Throwable) {
                 when (error) {
                     is TooManyRequestsException -> throw error
@@ -114,18 +116,14 @@ internal class FinalHeartbeats(
                     else -> throw GetActualFilePartException(cause = error)
                 }
             }
-            val contentLength = response.body.use { body ->
+            index += response.body.use { body ->
                 write(body = body, dst = dst)
             }
-            index += contentLength
             val read = dst.length()
             if (read > response.fullLength) {
                 error("update wrong full length")
             }
             if (read == response.fullLength) return
-            if (contentLength == 0L) {
-                error("update wrong content length")
-            }
         }
     }
 
