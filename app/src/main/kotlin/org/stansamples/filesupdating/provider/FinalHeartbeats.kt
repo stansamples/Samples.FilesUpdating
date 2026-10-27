@@ -9,8 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.stansamples.filesupdating.entity.CloseableBody
 import org.stansamples.filesupdating.entity.GetActualFilePartException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
@@ -25,11 +23,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
-    private val contexts: Contexts,
     private val dirs: Dirs,
     private val remotes: Remotes,
     private val secrets: Secrets,
     private val times: Times,
+    contexts: Contexts,
     loggers: Loggers,
 ) : Heartbeats {
     private val logger = loggers.create("[Heartbeats]")
@@ -38,33 +36,29 @@ internal class FinalHeartbeats(
     private var _requested: Duration? = null
     private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
-    val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
+    private val coroutineScope = CoroutineScope(contexts.default + SupervisorJob())
 
     init {
         coroutineScope.launch {
-            withContext(contexts.default) {
-                var job: Job? = null
-                _started.drop(1).collect { newState ->
-                    logger.debug("started: $newState")
-                    if (newState) {
-                        _requested = null
-                        job = coroutineScope.launch {
-                            withContext(contexts.default) {
-                                while (_started.value) {
-                                    val timeStart = times.now()
-                                    try {
-                                        heartbeat()
-                                    } catch (error: Throwable) {
-                                        logger.warning("heartbeat error: $error")
-                                        _started.value = false
-                                    }
-                                    delay(ttl - times.elapsed(timeStart = timeStart))
-                                }
+            var job: Job? = null
+            _started.drop(1).collect { newState ->
+                logger.debug("started: $newState")
+                if (newState) {
+                    _requested = null
+                    job = coroutineScope.launch {
+                        while (_started.value) {
+                            val timeStart = times.now()
+                            try {
+                                heartbeat()
+                            } catch (error: Throwable) {
+                                logger.warning("heartbeat error: $error")
+                                _started.value = false
                             }
+                            delay(ttl - times.elapsed(timeStart = timeStart))
                         }
-                    } else {
-                        job?.cancelAndJoin()
                     }
+                } else {
+                    job?.cancelAndJoin()
                 }
             }
         }
@@ -167,10 +161,12 @@ internal class FinalHeartbeats(
             }
             return null
         } finally {
-            try {
-                remotes.dequeue(serialNumber = serialNumber, id = pu.id)
-            } catch (error: Throwable) {
-                logger.warning("dequeue error: $error")
+            coroutineScope.launch {
+                try {
+                    remotes.dequeue(serialNumber = serialNumber, id = pu.id)
+                } catch (error: Throwable) {
+                    logger.warning("dequeue error: $error")
+                }
             }
         }
         try {
@@ -207,22 +203,18 @@ internal class FinalHeartbeats(
 
     override fun start() {
         coroutineScope.launch {
-            withContext(contexts.default) {
-                if (!_started.value) {
-                    logger.debug("starting")
-                    _started.value = true
-                }
+            if (!_started.value) {
+                logger.debug("starting")
+                _started.value = true
             }
         }
     }
 
     override fun stop() {
         coroutineScope.launch {
-            withContext(contexts.default) {
-                if (_started.value) {
-                    logger.debug("stopping")
-                    _started.value = false
-                }
+            if (_started.value) {
+                logger.debug("stopping")
+                _started.value = false
             }
         }
     }
