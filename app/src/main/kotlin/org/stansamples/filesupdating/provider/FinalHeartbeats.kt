@@ -103,7 +103,11 @@ internal class FinalHeartbeats(
         return read
     }
 
-    private fun download(id: String, dst: File) {
+    private fun download(
+        serialNumber: String,
+        id: String,
+        dst: File,
+    ) {
         var _index = dst.length()
         var _fullLength: Long? = null
         val partSize = 64_000_000L
@@ -113,7 +117,7 @@ internal class FinalHeartbeats(
             val range = LongRange(_index, _index + partSize - 1)
             if (range.isEmpty()) error("download empty range")
             val response = try {
-                remotes.getActualFilePart(serialNumber = locals.serialNumber, id = id, range = range)
+                remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = range)
             } catch (error: Throwable) {
                 throw GetActualFilePartException(cause = error)
             }
@@ -162,7 +166,11 @@ internal class FinalHeartbeats(
         return dir.resolve("${id}.apk")
     }
 
-    private fun download(id: String, sha256: ByteArray): File {
+    private fun download(
+        serialNumber: String,
+        id: String,
+        sha256: ByteArray,
+    ): File {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
@@ -170,7 +178,7 @@ internal class FinalHeartbeats(
         }
         val tmp = getPackageFile(dir = dir, id = id)
         try {
-            download(id = id, dst = tmp)
+            download(serialNumber = serialNumber, id = id, dst = tmp)
         } catch (error: Throwable) {
             when (error) {
                 is HeartbeatsTTLException -> Unit
@@ -181,7 +189,7 @@ internal class FinalHeartbeats(
             throw error
         } finally {
             try {
-                remotes.dequeue(serialNumber = locals.serialNumber, id = id)
+                remotes.dequeue(serialNumber = serialNumber, id = id)
             } catch (error: Throwable) {
                 logger.warning("dequeue error: $error")
             }
@@ -236,6 +244,7 @@ internal class FinalHeartbeats(
     }
 
     private fun heartbeat() {
+        val serialNumber = locals.serialNumber ?: error("No serial number!")
         val packageNames = _apps.mapTo(mutableSetOf()) { it.packageName }
         updateApps(packageNames = packageNames)
         val dcTimeout = locals.dcTimeout
@@ -248,7 +257,7 @@ internal class FinalHeartbeats(
         val lastRequested = _timeRequested
         _timeRequested = times.now()
         val response = try {
-            remotes.heartbeat(HeartbeatRequest(serialNumber = locals.serialNumber, apps = _apps))
+            remotes.heartbeat(HeartbeatRequest(serialNumber = serialNumber, apps = _apps))
         } catch (error: Throwable) {
             _lastError = error
             throw HeartbeatRequestException(cause = error)
@@ -283,7 +292,7 @@ internal class FinalHeartbeats(
                 }
             }
             val file = try {
-                download(id = pu.id, sha256 = pu.sha256)
+                download(serialNumber = serialNumber, id = pu.id, sha256 = pu.sha256)
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
                 continue
