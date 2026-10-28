@@ -51,7 +51,7 @@ fun main() {
     )
     val logger = loggers.create("[App]")
     val job = SupervisorJob()
-    val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
+    val coroutineScope = CoroutineScope(contexts.main + job)
     coroutineScope.launch {
         withContext(contexts.default) {
             heartbeats.states.collect { state ->

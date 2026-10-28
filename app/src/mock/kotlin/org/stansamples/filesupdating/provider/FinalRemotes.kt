@@ -20,7 +20,7 @@ internal class FinalRemotes : Remotes {
         val needsPackagesUpdate = mutableListOf<PackageUpdate>()
         for (expected in Mocks.apps) {
             val actual = request.apps.firstOrNull { it.packageName == expected.packageName }
-            if (actual == null || expected != actual) {
+            if (expected != actual) {
                 needsPackagesUpdate.add(Mocks.getPackageUpdate(appInfo = expected))
             }
         }
