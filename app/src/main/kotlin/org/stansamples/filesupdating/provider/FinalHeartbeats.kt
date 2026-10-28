@@ -81,6 +81,10 @@ internal class FinalHeartbeats(
         }
     }
 
+    private fun isExpired(requested: Duration? = _requested): Boolean {
+        return requested != null && times.elapsed(requested) > ttl
+    }
+
     private fun OutputStream.write(src: InputStream): Long {
         val buffer = ByteArray(8_192)
         var read = 0L
@@ -100,20 +104,13 @@ internal class FinalHeartbeats(
         val partSize = 64_000_000L
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
-            val requested = _requested
-            if (requested != null && times.elapsed(requested) > ttl) {
-                throw HeartbeatsTTLException()
-            }
+            if (isExpired()) throw HeartbeatsTTLException()
             val range = LongRange(_index, _index + partSize - 1)
             if (range.isEmpty()) error("download empty range")
             val response = try {
                 remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = range)
             } catch (error: Throwable) {
-                when (error) {
-                    is TooManyRequestsException -> throw error
-                    is RangeNotSatisfiableException -> throw error
-                    else -> throw GetActualFilePartException(cause = error)
-                }
+                throw GetActualFilePartException(cause = error)
             }
             response.body.use { body ->
                 if (_fullLength == null) {
@@ -160,7 +157,7 @@ internal class FinalHeartbeats(
         return dir.resolve("${id}.apk")
     }
 
-    private fun download(pu: PackageUpdate): File? {
+    private fun download(pu: PackageUpdate): File {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
@@ -171,12 +168,12 @@ internal class FinalHeartbeats(
             download(id = pu.id, dst = tmp)
         } catch (error: Throwable) {
             when (error) {
-                is HeartbeatsTTLException,
-                is TooManyRequestsException,
+                is HeartbeatsTTLException -> Unit
+                is GetActualFilePartException if error.cause is RangeNotSatisfiableException -> tmp.delete()
                 is GetActualFilePartException -> Unit
                 else -> tmp.delete()
             }
-            return null
+            throw error
         } finally {
             try {
                 remotes.dequeue(serialNumber = serialNumber, id = pu.id)
@@ -238,7 +235,7 @@ internal class FinalHeartbeats(
             } catch (error: Throwable) {
                 logger.warning("download package error: $error")
                 continue
-            } ?: continue
+            }
             _states.value = Heartbeats.State.InstallingPackage
             packageNames += try {
                 packages.install(file = file)
