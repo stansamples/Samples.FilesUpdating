@@ -282,7 +282,7 @@ internal class FinalHeartbeats(
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
             if (expires()) return
-            _states.value = Heartbeats.State.Updating
+            _states.value = Heartbeats.State.UpdatingPackage(packageName = pu.packageName, version = pu.version)
             logger.debug("updating ${pu.packageName}")
             if (!packageNames.contains(pu.packageName)) {
                 val appInfo = try {
@@ -313,6 +313,7 @@ internal class FinalHeartbeats(
                 continue
             }
         }
+        _states.value = Heartbeats.State.Updating
         updateApps(packageNames = packageNames)
         _states.value = Heartbeats.State.Waiting(timeUpdated = _timeUpdated)
     }

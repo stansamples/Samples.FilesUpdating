@@ -7,6 +7,10 @@ internal interface Heartbeats {
     sealed interface State {
         data object Updating : State
         data object Stopped : State
+        data class UpdatingPackage(
+            val packageName: String,
+            val version: String,
+        ) : State
         data class DownloadingPackage(
             val packageName: String,
             val contentLength: Long,
