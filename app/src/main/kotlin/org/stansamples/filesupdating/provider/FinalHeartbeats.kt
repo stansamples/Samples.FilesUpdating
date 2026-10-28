@@ -19,6 +19,7 @@ import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
+import org.stansamples.filesupdating.util.hex
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -166,7 +167,7 @@ internal class FinalHeartbeats(
     private fun getPackageFile(dir: File, id: String): File {
         if (!dir.exists()) dir.mkdir()
         val timeNow = times.now()
-        val hash = secrets.sha256(id.toByteArray()).copyOf(8).toHexString()
+        val hash = secrets.sha256(id.toByteArray()).copyOf(8).hex()
         for (file in dir.listFiles().orEmpty()) {
             var split = file.name.split(".")
             if (split.size != 2 || split[0].isEmpty() || split[1] != "apk") {
