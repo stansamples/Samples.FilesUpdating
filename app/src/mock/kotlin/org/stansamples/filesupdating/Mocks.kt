@@ -21,22 +21,23 @@ internal object Mocks {
             versionCode = index.toLong(),
         )
     }
+    var installed = emptyList<AppInfo>()
     val dcTimeout: Duration? = null
     val ttl: Duration = 8.seconds
-    val filePartSize: Long = 4
+    val filePartSize: Long = 8
 
-    fun getBytes(appInfo: AppInfo): ByteArray {
-        val id = "${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}"
-        return sha256.digest(id.toByteArray())
+    fun getBytes(packageName: String, version: String): ByteArray {
+        return sha256.digest("$packageName-$version".toByteArray())
     }
 
     fun getPackageUpdate(appInfo: AppInfo): PackageUpdate {
         val id = "${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}"
+        val bytes = getBytes(packageName = appInfo.packageName, version = "${appInfo.versionName}-${appInfo.versionCode}")
         return PackageUpdate(
             id = id,
             packageName = appInfo.packageName,
             version = "${appInfo.versionName}-${appInfo.versionCode}",
-            sha256 = sha256.digest(getBytes(appInfo = appInfo)),
+            sha256 = sha256.digest(bytes),
         )
     }
 }

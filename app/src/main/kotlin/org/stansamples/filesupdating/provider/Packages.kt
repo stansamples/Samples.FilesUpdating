@@ -13,6 +13,8 @@ internal interface Packages {
     fun install(
         file: File,
         listener: InstallListener,
+        expectedPackageName: String,
+        expectedVersion: String,
     ): String
     fun getAppInfo(packageName: String): AppInfo
 }

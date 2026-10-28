@@ -156,15 +156,6 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun commit(packageName: String, sha256: ByteArray, tmp: File, target: File) {
-        if (!tmp.inputStream().use(secrets::sha256).contentEquals(sha256)) {
-            error("commit $packageName hash error")
-        }
-        if (!tmp.renameTo(target)) {
-            error("commit $packageName target error")
-        }
-    }
-
     private fun getPackageFile(dir: File, id: String): File {
         if (!dir.exists()) dir.mkdir()
         val timeNow = times.now()
@@ -224,14 +215,21 @@ internal class FinalHeartbeats(
             }
         }
         try {
-            commit(packageName = packageName, tmp = tmp, target = target, sha256 = sha256)
+            val equals = tmp.inputStream().use(secrets::sha256).contentEquals(sha256)
+            if (!equals) error("commit $packageName hash error")
+            val renamed = tmp.renameTo(target)
+            if (!renamed) error("commit $packageName target error")
         } finally {
             tmp.delete()
         }
         return target
     }
 
-    private fun install(file: File): String {
+    private fun install(
+        file: File,
+        expectedPackageName: String,
+        expectedVersion: String,
+    ): String {
         val listener = object : Packages.InstallListener {
             override fun onProgress(
                 packageName: String,
@@ -256,6 +254,8 @@ internal class FinalHeartbeats(
         return packages.install(
             file = file,
             listener = listener,
+            expectedPackageName = expectedPackageName,
+            expectedVersion = expectedVersion,
         )
     }
 
@@ -316,6 +316,7 @@ internal class FinalHeartbeats(
                     null
                 }
                 if (appInfo != null && pu.version == "${appInfo.versionName}-${appInfo.versionCode}") {
+                    logger.debug("updating ${pu.packageName} installed")
                     packageNames += appInfo.packageName
                     continue
                 }
@@ -332,7 +333,11 @@ internal class FinalHeartbeats(
                 continue
             }
             packageNames += try {
-                install(file = file)
+                install(
+                    file = file,
+                    expectedPackageName = pu.packageName,
+                    expectedVersion = pu.version,
+                )
             } catch (error: Throwable) {
                 logger.warning("install ${pu.packageName} error: $error")
                 continue
