@@ -57,9 +57,11 @@ fun main() {
             heartbeats.states.collect { state ->
                 when (state) {
                     is Heartbeats.State.DownloadingPackage -> {
-                        logger.debug("${state.packageName}: ${state.read}/${state.fullLength}")
+                        logger.debug("downloading ${state.packageName} ${state.read}/${state.fullLength}")
                     }
-                    is Heartbeats.State.InstallingPackage -> { /* noop */ }
+                    is Heartbeats.State.InstallingPackage -> {
+                        logger.debug("installing ${state.packageName} ${state.read}/${state.fullLength}")
+                    }
                     Heartbeats.State.Stopped -> { /* noop */ }
                     Heartbeats.State.Updating -> { /* noop */ }
                     is Heartbeats.State.UpdatingPackage -> { /* noop */ }

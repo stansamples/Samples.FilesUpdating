@@ -44,7 +44,8 @@ internal class FinalRemotes : Remotes {
         val leftSize = bytes.size - request.range.first
         val filePart = ByteArrayInputStream(bytes).use { src ->
             ByteArrayOutputStream().use { dst ->
-                dst.write(src = src, bufferSize = 2, maxSize = kotlin.math.min(partSize, leftSize))
+                src.skip(request.range.first)
+                dst.write(src = src, maxSize = kotlin.math.min(partSize, leftSize))
                 dst.toByteArray()
             }
         }

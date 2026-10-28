@@ -19,7 +19,7 @@ internal class FinalPackages : Packages {
         listener.onStartInstall(packageName = appInfo.packageName)
         Thread.sleep(1_000)
         file.inputStream().use { src ->
-            val buffer = ByteArray(8_192)
+            val buffer = ByteArray(14)
             var read = 0L
             while (true) {
                 val length = src.read(buffer)

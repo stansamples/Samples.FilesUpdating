@@ -328,6 +328,7 @@ internal class FinalHeartbeats(
                 logger.warning("install ${pu.packageName} error: $error")
                 continue
             }
+            updateApps(packageNames = packageNames)
         }
         _states.value = Heartbeats.State.Updating
         updateApps(packageNames = packageNames)

@@ -23,8 +23,8 @@ internal object Mocks {
     }
     val installed = mutableListOf<AppInfo>()
     val dcTimeout: Duration? = null
-    val ttl: Duration = 8.seconds
-    val filePartSize: Long = 8
+    val ttl: Duration = 6.seconds
+    val filePartSize: Long = 4
 
     fun getBytes(appInfo: AppInfo): ByteArray {
         return sha256.digest("${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}".toByteArray())

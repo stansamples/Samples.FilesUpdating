@@ -19,12 +19,12 @@ internal fun OutputStream.write(src: InputStream, bufferSize: Int = 8_192): Long
 internal fun OutputStream.write(src: InputStream, bufferSize: Int = 8_192, maxSize: Long): Long {
     val buffer = ByteArray(bufferSize)
     var read = 0L
-    while (true) {
+    while (read < maxSize) {
         val left = maxSize - read
         val length = if (buffer.size > left) {
-            src.read(buffer)
-        } else {
             src.read(buffer, 0, left.toInt())
+        } else {
+            src.read(buffer)
         }
         if (length < 0) break
         write(buffer, 0, length)
