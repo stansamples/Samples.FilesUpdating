@@ -42,10 +42,10 @@ internal class FinalHeartbeats(
     private val logger = loggers.create("[Heartbeats]")
     private val mutex = Mutex()
     private var _apps = listOf<AppInfo>()
+    private var _lastError: Throwable? = null
     private var _timeRequested: Duration? = null
     private var _timeStarted: Duration = Duration.ZERO
     private var _timeUpdated: Duration? = null
-    private var _lastError: Throwable? = null
     override val started = _started.asStateFlow()
     override val states = _states.asStateFlow()
 
@@ -55,10 +55,10 @@ internal class FinalHeartbeats(
             _started.drop(1).collect { newState ->
                 logger.debug("started: $newState")
                 if (newState) {
-                    _timeStarted = times.now()
-                    _timeRequested = null
-                    _timeUpdated = null
                     _lastError = null
+                    _timeRequested = null
+                    _timeStarted = times.now()
+                    _timeUpdated = null
                     job = coroutineScope.launch {
                         while (_started.value) {
                             _states.value = Heartbeats.State.Updating
