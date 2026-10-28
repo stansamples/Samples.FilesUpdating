@@ -24,6 +24,8 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
@@ -162,10 +164,30 @@ internal class FinalHeartbeats(
     }
 
     private fun getPackageFile(dir: File, id: String): File {
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) TODO()
+        if (!dir.exists()) dir.mkdir()
+        val timeNow = times.now()
+        val hash = secrets.sha256(id.toByteArray()).copyOf(8).toHexString()
+        for (file in dir.listFiles().orEmpty()) {
+            var split = file.name.split(".")
+            if (split.size != 2 || split[0].isEmpty() || split[1] != "apk") {
+                file.delete()
+                continue
+            }
+            split = split[0].split("_")
+            if (split.size != 2 || split[0].isEmpty() || split[1].isEmpty()) {
+                file.delete()
+                continue
+            }
+            val time = split[0].toLongOrNull()?.milliseconds
+            if (time == null || time > timeNow || (timeNow - time) > 24.hours) {
+                file.delete()
+                continue
+            }
+            if (split[1] == hash) {
+                return file
+            }
         }
-        return dir.resolve("${id}.apk")
+        return dir.resolve("${timeNow.inWholeMilliseconds}_${hash}.apk")
     }
 
     private fun download(

@@ -4,6 +4,11 @@ import java.io.InputStream
 import java.security.MessageDigest
 
 internal class FinalSecrets : Secrets {
+    override fun sha256(encoded: ByteArray): ByteArray {
+        val md = MessageDigest.getInstance("sha256")
+        return md.digest(encoded)
+    }
+
     override fun sha256(src: InputStream): ByteArray {
         val md = MessageDigest.getInstance("sha256")
         val buffer = ByteArray(1 shl 15)
