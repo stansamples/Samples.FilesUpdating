@@ -208,11 +208,24 @@ internal class FinalHeartbeats(
         val packageNames = _apps.mapTo(mutableSetOf()) { it.packageName }
         updateApps(packageNames = packageNames)
         logger.debug("heartbeat request...")
+        val lastRequested = _requested
+        val lastUpdated = _updated
+        val lastFailure = lastRequested?.let {
+            lastUpdated == null || lastUpdated < lastRequested
+        }
         _requested = times.now()
         val response = try {
             remotes.heartbeat(HeartbeatRequest(serialNumber = serialNumber, apps = _apps))
         } catch (error: Throwable) {
             throw HeartbeatRequestException(cause = error)
+        }
+        if (lastFailure == true) {
+            val message = """
+                success after failure
+                last requested: ${lastRequested.inWholeMilliseconds}
+                last updated: ${lastUpdated?.inWholeMilliseconds}
+            """.trimIndent()
+            logger.debug(message)
         }
         _updated = times.now()
         for (pu in response.needsPackagesUpdate) {
