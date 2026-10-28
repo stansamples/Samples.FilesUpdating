@@ -4,7 +4,10 @@ import org.stansamples.filesupdating.entity.AppInfo
 import java.io.File
 
 internal class FinalPackages : Packages {
-    override fun install(file: File): String {
+    override fun install(
+        file: File,
+        listener: Packages.InstallListener,
+    ): String {
         TODO("FinalPackages:install Not yet implemented")
     }
 

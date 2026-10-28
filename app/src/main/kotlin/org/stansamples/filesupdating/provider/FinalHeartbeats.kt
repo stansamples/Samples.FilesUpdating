@@ -194,6 +194,34 @@ internal class FinalHeartbeats(
         return target
     }
 
+    private fun install(file: File): String {
+        val listener = object : Packages.InstallListener {
+            override fun onProgress(
+                packageName: String,
+                contentLength: Long,
+                read: Long,
+            ) {
+                _states.value = Heartbeats.State.InstallingPackage(
+                    packageName = packageName,
+                    contentLength = contentLength,
+                    read = read,
+                )
+            }
+
+            override fun onStartInstall(packageName: String) {
+                logger.debug("install $packageName start")
+            }
+
+            override fun onFinishInstall(packageName: String) {
+                logger.debug("install $packageName finish")
+            }
+        }
+        return packages.install(
+            file = file,
+            listener = listener,
+        )
+    }
+
     private fun updateApps(packageNames: Set<String>) {
         val apps = mutableListOf<AppInfo>()
         for (packageName in packageNames) {
@@ -260,9 +288,8 @@ internal class FinalHeartbeats(
                 logger.warning("download ${pu.packageName} error: $error")
                 continue
             }
-            _states.value = Heartbeats.State.InstallingPackage
             packageNames += try {
-                packages.install(file = file)
+                install(file = file)
             } catch (error: Throwable) {
                 logger.warning("install ${pu.packageName} error: $error")
                 continue
