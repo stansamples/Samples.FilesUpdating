@@ -203,7 +203,7 @@ internal class FinalHeartbeats(
     }
 
     private fun heartbeat() {
-        val packageNames = _apps.map { it.packageName }.toMutableSet()
+        val packageNames = _apps.mapTo(mutableSetOf()) { it.packageName }
         updateApps(packageNames = packageNames)
         logger.debug("heartbeat request...")
         val requested = times.now()
@@ -216,7 +216,7 @@ internal class FinalHeartbeats(
         _updated = times.now()
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
-            if (times.elapsed(requested) > ttl) return
+            if (isExpired(requested)) return
             _states.value = Heartbeats.State.Updating
             logger.debug("updating package: $pu")
             if (!packageNames.contains(pu.packageName)) {
