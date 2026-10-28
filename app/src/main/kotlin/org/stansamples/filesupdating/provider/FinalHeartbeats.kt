@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.stansamples.filesupdating.entity.AppInfo
 import org.stansamples.filesupdating.entity.GetActualFilePartException
 import org.stansamples.filesupdating.entity.HeartbeatRequest
@@ -17,7 +19,6 @@ import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
-import org.stansamples.filesupdating.entity.TooManyRequestsException
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -34,17 +35,18 @@ internal class FinalHeartbeats(
     contexts: Contexts,
     loggers: Loggers,
 ) : Heartbeats {
+    private val _started = MutableStateFlow(false)
+    private val _states = MutableStateFlow<Heartbeats.State>(Heartbeats.State.Stopped)
+    private val coroutineScope = CoroutineScope(contexts.default + SupervisorJob())
     private val logger = loggers.create("[Heartbeats]")
+    private val mutex = Mutex()
     private val serialNumber = "foobarbaz" // todo
     private val ttl = 4.seconds // todo
     private var _apps = listOf<AppInfo>()
     private var _requested: Duration? = null
     private var _updated: Duration? = null
-    private val _started = MutableStateFlow(false)
     override val started = _started.asStateFlow()
-    private val _states = MutableStateFlow<Heartbeats.State>(Heartbeats.State.Stopped)
     override val states = _states.asStateFlow()
-    private val coroutineScope = CoroutineScope(contexts.default + SupervisorJob())
 
     init {
         coroutineScope.launch {
@@ -250,18 +252,22 @@ internal class FinalHeartbeats(
 
     override fun start() {
         coroutineScope.launch {
-            if (!_started.value) {
-                logger.debug("starting")
-                _started.value = true
+            mutex.withLock {
+                if (!_started.value) {
+                    logger.debug("starting")
+                    _started.value = true
+                }
             }
         }
     }
 
     override fun stop() {
         coroutineScope.launch {
-            if (_started.value) {
-                logger.debug("stopping")
-                _started.value = false
+            mutex.withLock {
+                if (_started.value) {
+                    logger.debug("stopping")
+                    _started.value = false
+                }
             }
         }
     }
