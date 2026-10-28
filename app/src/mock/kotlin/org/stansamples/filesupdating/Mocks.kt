@@ -26,13 +26,13 @@ internal object Mocks {
     val ttl: Duration = 8.seconds
     val filePartSize: Long = 8
 
-    fun getBytes(packageName: String, version: String): ByteArray {
-        return sha256.digest("$packageName-$version".toByteArray())
+    fun getBytes(appInfo: AppInfo): ByteArray {
+        return sha256.digest("${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}".toByteArray())
     }
 
     fun getPackageUpdate(appInfo: AppInfo): PackageUpdate {
         val id = "${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}"
-        val bytes = getBytes(packageName = appInfo.packageName, version = "${appInfo.versionName}-${appInfo.versionCode}")
+        val bytes = getBytes(appInfo = appInfo)
         return PackageUpdate(
             id = id,
             packageName = appInfo.packageName,

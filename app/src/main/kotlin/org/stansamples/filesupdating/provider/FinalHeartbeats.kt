@@ -21,10 +21,9 @@ import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.util.hex
+import org.stansamples.filesupdating.util.write
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -91,19 +90,6 @@ internal class FinalHeartbeats(
 
     private fun expires(timeRequested: Duration? = _timeRequested): Boolean {
         return timeRequested != null && times.elapsed(timeRequested) > locals.ttl
-    }
-
-    private fun OutputStream.write(src: InputStream): Long {
-        val buffer = ByteArray(8_192)
-        var read = 0L
-        while (true) {
-            val length = src.read(buffer)
-            if (length < 0) break
-            write(buffer, 0, length)
-            read += length
-        }
-        flush()
-        return read
     }
 
     private fun download(

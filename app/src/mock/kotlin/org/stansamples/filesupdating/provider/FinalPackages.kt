@@ -13,7 +13,7 @@ internal class FinalPackages : Packages {
     ): String {
         val appInfo = Mocks.apps.firstOrNull { it.packageName == expectedPackageName } ?: TODO("No ${expectedPackageName}!")
         if (expectedVersion != "${appInfo.versionName}-${appInfo.versionCode}") TODO("Wrong version!")
-        val expected = Mocks.getBytes(packageName = appInfo.packageName, version = expectedVersion)
+        val expected = Mocks.getBytes(appInfo = appInfo)
         val actual = file.readBytes()
         if (!expected.contentEquals(actual)) TODO("Wrong file!")
         listener.onStartInstall(packageName = appInfo.packageName)
