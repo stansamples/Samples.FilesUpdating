@@ -11,10 +11,12 @@ internal class FinalPackages : Packages {
         expectedPackageName: String,
         expectedVersion: String,
     ): String {
-        val expected = Mocks.getBytes(packageName = expectedPackageName, version = expectedVersion)
+        val appInfo = Mocks.apps.firstOrNull { it.packageName == expectedPackageName } ?: TODO("No ${expectedPackageName}!")
+        if (expectedVersion != "${appInfo.versionName}-${appInfo.versionCode}") TODO("Wrong version!")
+        val expected = Mocks.getBytes(packageName = appInfo.packageName, version = expectedVersion)
         val actual = file.readBytes()
         if (!expected.contentEquals(actual)) TODO("Wrong file!")
-        listener.onStartInstall(packageName = expectedPackageName)
+        listener.onStartInstall(packageName = appInfo.packageName)
         Thread.sleep(1_000)
         file.inputStream().use { src ->
             val buffer = ByteArray(8_192)
@@ -24,12 +26,20 @@ internal class FinalPackages : Packages {
                 Thread.sleep(1_000)
                 if (length < 0) break
                 read += length
-                listener.onProgress(packageName = expectedPackageName, contentLength = actual.size.toLong(), read = read)
+                listener.onProgress(packageName = appInfo.packageName, contentLength = actual.size.toLong(), read = read)
             }
         }
-        listener.onFinishInstall(packageName = expectedPackageName)
+        for (i in Mocks.installed.indices) {
+            val it = Mocks.installed[i]
+            if (it.packageName == appInfo.packageName) {
+                Mocks.installed.removeAt(i)
+                break
+            }
+        }
+        Mocks.installed += appInfo
+        listener.onFinishInstall(packageName = appInfo.packageName)
         Thread.sleep(1_000)
-        return expectedPackageName
+        return appInfo.packageName
     }
 
     override fun getAppInfo(packageName: String): AppInfo {

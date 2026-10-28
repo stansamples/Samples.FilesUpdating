@@ -21,7 +21,7 @@ internal object Mocks {
             versionCode = index.toLong(),
         )
     }
-    var installed = emptyList<AppInfo>()
+    val installed = mutableListOf<AppInfo>()
     val dcTimeout: Duration? = null
     val ttl: Duration = 8.seconds
     val filePartSize: Long = 8
