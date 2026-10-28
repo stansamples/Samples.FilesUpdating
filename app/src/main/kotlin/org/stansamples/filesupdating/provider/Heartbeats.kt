@@ -13,12 +13,12 @@ internal interface Heartbeats {
         ) : State
         data class DownloadingPackage(
             val packageName: String,
-            val contentLength: Long,
+            val fullLength: Long,
             val read: Long,
         ) : State
         data class InstallingPackage(
             val packageName: String,
-            val contentLength: Long,
+            val fullLength: Long,
             val read: Long,
         ) : State
         class Waiting(val timeUpdated: Duration?) : State {

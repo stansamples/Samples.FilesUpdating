@@ -5,7 +5,7 @@ import java.io.File
 
 internal interface Packages {
     interface InstallListener {
-        fun onProgress(packageName: String, contentLength: Long, read: Long)
+        fun onProgress(packageName: String, fullLength: Long, read: Long)
         fun onStartInstall(packageName: String)
         fun onFinishInstall(packageName: String)
     }

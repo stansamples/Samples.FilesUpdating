@@ -16,11 +16,11 @@ import java.io.ByteArrayOutputStream
 internal class FinalRemotes : Remotes {
     override fun heartbeat(request: HeartbeatRequest): HeartbeatResponse {
         Thread.sleep(1_000)
-        if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
+        if (!Mocks.terminals.contains(request.serialNumber)) throw ConflictException()
         val needsPackagesUpdate = mutableListOf<PackageUpdate>()
         for (expected in Mocks.apps) {
             val actual = request.apps.firstOrNull { it.packageName == expected.packageName }
-            if (expected != actual) {
+            if (actual == null || expected != actual) {
                 needsPackagesUpdate.add(Mocks.getPackageUpdate(appInfo = expected))
             }
         }
@@ -31,20 +31,20 @@ internal class FinalRemotes : Remotes {
 
     override fun dequeue(request: DequeueRequest) {
         Thread.sleep(1_000)
-        if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
+        if (!Mocks.terminals.contains(request.serialNumber)) throw ConflictException()
         // noop
     }
 
     override fun getFilePart(request: GetFilePartRequest): GetFilePartResponse {
         Thread.sleep(1_000)
-        if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
+        if (!Mocks.terminals.contains(request.serialNumber)) throw ConflictException()
         val appInfo = Mocks.apps.firstOrNull { Mocks.getPackageUpdate(it).id == request.id } ?: TODO("No ${request.id}!")
         val bytes = Mocks.getBytes(appInfo = appInfo)
         val partSize = request.range.last - request.range.first + 1
         val leftSize = bytes.size - request.range.first
         val filePart = ByteArrayInputStream(bytes).use { src ->
             ByteArrayOutputStream().use { dst ->
-                dst.write(src = src, maxSize = kotlin.math.min(partSize, leftSize))
+                dst.write(src = src, bufferSize = 2, maxSize = kotlin.math.min(partSize, leftSize))
                 dst.toByteArray()
             }
         }

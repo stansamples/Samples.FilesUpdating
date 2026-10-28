@@ -26,7 +26,7 @@ internal class FinalPackages : Packages {
                 Thread.sleep(1_000)
                 if (length < 0) break
                 read += length
-                listener.onProgress(packageName = appInfo.packageName, contentLength = actual.size.toLong(), read = read)
+                listener.onProgress(packageName = appInfo.packageName, fullLength = actual.size.toLong(), read = read)
             }
         }
         for (i in Mocks.installed.indices) {

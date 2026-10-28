@@ -1,7 +1,11 @@
 package org.stansamples.filesupdating
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.stansamples.filesupdating.provider.Contexts
@@ -45,11 +49,31 @@ fun main() {
         secrets = secrets,
         times = times,
     )
+    val logger = loggers.create("[App]")
+    val job = SupervisorJob()
+    val coroutineScope = CoroutineScope(contexts.main + SupervisorJob())
+    coroutineScope.launch {
+        withContext(contexts.default) {
+            heartbeats.states.collect { state ->
+                when (state) {
+                    is Heartbeats.State.DownloadingPackage -> {
+                        logger.debug("${state.packageName}: ${state.read}/${state.fullLength}")
+                    }
+                    is Heartbeats.State.InstallingPackage -> { /* noop */ }
+                    Heartbeats.State.Stopped -> { /* noop */ }
+                    Heartbeats.State.Updating -> { /* noop */ }
+                    is Heartbeats.State.UpdatingPackage -> { /* noop */ }
+                    is Heartbeats.State.Waiting -> { /* noop */ }
+                }
+            }
+        }
+    }
     runBlocking {
         withContext(contexts.default) {
             heartbeats.start()
             delay(30.seconds)
             heartbeats.stop()
         }
+        job.cancelAndJoin()
     }
 }

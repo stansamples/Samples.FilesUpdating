@@ -3,8 +3,8 @@ package org.stansamples.filesupdating.util
 import java.io.InputStream
 import java.io.OutputStream
 
-internal fun OutputStream.write(src: InputStream): Long {
-    val buffer = ByteArray(8_192)
+internal fun OutputStream.write(src: InputStream, bufferSize: Int = 8_192): Long {
+    val buffer = ByteArray(bufferSize)
     var read = 0L
     while (true) {
         val length = src.read(buffer)
@@ -16,8 +16,8 @@ internal fun OutputStream.write(src: InputStream): Long {
     return read
 }
 
-internal fun OutputStream.write(src: InputStream, maxSize: Long): Long {
-    val buffer = ByteArray(8_192)
+internal fun OutputStream.write(src: InputStream, bufferSize: Int = 8_192, maxSize: Long): Long {
+    val buffer = ByteArray(bufferSize)
     var read = 0L
     while (true) {
         val left = maxSize - read

@@ -135,7 +135,7 @@ internal class FinalHeartbeats(
             }
             _states.value = Heartbeats.State.DownloadingPackage(
                 packageName = packageName,
-                contentLength = response.fullLength,
+                fullLength = response.fullLength,
                 read = read,
             )
             if (read == response.fullLength) return
@@ -219,12 +219,12 @@ internal class FinalHeartbeats(
         val listener = object : Packages.InstallListener {
             override fun onProgress(
                 packageName: String,
-                contentLength: Long,
+                fullLength: Long,
                 read: Long,
             ) {
                 _states.value = Heartbeats.State.InstallingPackage(
                     packageName = packageName,
-                    contentLength = contentLength,
+                    fullLength = fullLength,
                     read = read,
                 )
             }

@@ -9,10 +9,10 @@ import kotlin.time.Duration.Companion.seconds
 
 internal object Mocks {
     private val sha256 = MessageDigest.getInstance("sha256")
-    val remoteTerminals: Set<String> = (0 until 16).mapTo(mutableSetOf()) { index ->
+    val terminals: Set<String> = (0 until 16).mapTo(mutableSetOf()) { index ->
         String.format(Locale.US, "SERIAL%08d", index)
     }
-    val serialNumber = remoteTerminals.firstOrNull()
+    val serialNumber = terminals.firstOrNull()
     val apps = (0 until 16).map { index ->
         val packageName = String.format(Locale.US, "PACKAGE%08d", index)
         AppInfo(
