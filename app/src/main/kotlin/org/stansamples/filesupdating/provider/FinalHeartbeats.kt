@@ -152,12 +152,12 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun commit(tmp: File, target: File, sha256: ByteArray) {
+    private fun commit(packageName: String, sha256: ByteArray, tmp: File, target: File) {
         if (!tmp.inputStream().use(secrets::sha256).contentEquals(sha256)) {
-            error("commit hash error")
+            error("commit $packageName hash error")
         }
         if (!tmp.renameTo(target)) {
-            error("commit target error")
+            error("commit $packageName target error")
         }
     }
 
@@ -185,8 +185,9 @@ internal class FinalHeartbeats(
         } catch (error: Throwable) {
             when (error) {
                 is HeartbeatsTTLException -> Unit
-                is GetActualFilePartException if error.cause is RangeNotSatisfiableException -> tmp.delete()
-                is GetActualFilePartException -> Unit
+                is GetActualFilePartException -> {
+                    if (error.cause is RangeNotSatisfiableException) tmp.delete()
+                }
                 else -> tmp.delete()
             }
             throw error
@@ -198,7 +199,7 @@ internal class FinalHeartbeats(
             }
         }
         try {
-            commit(tmp = tmp, target = target, sha256 = sha256)
+            commit(packageName = packageName, tmp = tmp, target = target, sha256 = sha256)
         } finally {
             tmp.delete()
         }
