@@ -29,11 +29,7 @@ fun main() {
         default = Dispatchers.Default,
     )
     val dirs: Dirs = FinalDirs()
-    val locals: Locals = FinalLocals(
-        dcTimeout = 32.seconds,
-        serialNumber = "foobarbaz",
-        ttl = 4.seconds,
-    )
+    val locals: Locals = FinalLocals()
     val loggers: Loggers = FinalLoggers()
     val packages: Packages = FinalPackages()
     val remotes: Remotes = FinalRemotes()
