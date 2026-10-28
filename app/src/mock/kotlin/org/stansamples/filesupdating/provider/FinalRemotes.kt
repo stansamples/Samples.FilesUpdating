@@ -2,7 +2,9 @@ package org.stansamples.filesupdating.provider
 
 import org.stansamples.filesupdating.Mocks
 import org.stansamples.filesupdating.entity.ConflictException
-import org.stansamples.filesupdating.entity.GetActualFilePartResponse
+import org.stansamples.filesupdating.entity.DequeueRequest
+import org.stansamples.filesupdating.entity.GetFilePartRequest
+import org.stansamples.filesupdating.entity.GetFilePartResponse
 import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatResponse
 import org.stansamples.filesupdating.entity.PackageUpdate
@@ -12,10 +14,10 @@ internal class FinalRemotes : Remotes {
         Thread.sleep(1_000)
         if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
         val needsPackagesUpdate = mutableListOf<PackageUpdate>()
-        for (pu in Mocks.needsPackagesUpdate) {
-            val appInfo = request.apps.firstOrNull { it.packageName == pu.packageName }
-            if (appInfo == null || pu.version != "${appInfo.versionName}-${appInfo.versionCode}") {
-                needsPackagesUpdate.add(pu)
+        for (expected in Mocks.apps) {
+            val actual = request.apps.firstOrNull { it.packageName == expected.packageName }
+            if (expected == actual) {
+                needsPackagesUpdate.add(Mocks.getPackageUpdate(appInfo = expected))
             }
         }
         return HeartbeatResponse(
@@ -23,11 +25,15 @@ internal class FinalRemotes : Remotes {
         )
     }
 
-    override fun dequeue(serialNumber: String, id: String) {
-        TODO("FinalRemotes:dequeue($id)")
+    override fun dequeue(request: DequeueRequest) {
+        Thread.sleep(1_000)
+        if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
+        // noop
     }
 
-    override fun getActualFilePart(serialNumber: String, id: String, range: LongRange): GetActualFilePartResponse {
-        TODO("FinalRemotes:getActualFilePart($id, $range)")
+    override fun getFilePart(request: GetFilePartRequest): GetFilePartResponse {
+        Thread.sleep(1_000)
+        if (!Mocks.remoteTerminals.contains(request.serialNumber)) throw ConflictException()
+        TODO("FinalRemotes:getActualFilePart(${request.serialNumber}, ${request.id}, ${request.range})")
     }
 }

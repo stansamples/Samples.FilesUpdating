@@ -1,6 +1,6 @@
 package org.stansamples.filesupdating.entity
 
-internal class GetActualFilePartResponse(
+internal class GetFilePartResponse(
     val body: CloseableBody,
     val fullLength: Long,
 )

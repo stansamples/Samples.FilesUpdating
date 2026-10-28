@@ -12,7 +12,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.stansamples.filesupdating.entity.AppInfo
+import org.stansamples.filesupdating.entity.DequeueRequest
 import org.stansamples.filesupdating.entity.GetActualFilePartException
+import org.stansamples.filesupdating.entity.GetFilePartRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequestException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
@@ -118,8 +120,9 @@ internal class FinalHeartbeats(
             if (expires()) throw HeartbeatsTTLException()
             val range = LongRange(_index, _index + partSize - 1)
             if (range.isEmpty()) error("download empty range")
+            val request = GetFilePartRequest(serialNumber = serialNumber, id = id, range = range)
             val response = try {
-                remotes.getActualFilePart(serialNumber = serialNumber, id = id, range = range)
+                remotes.getFilePart(request = request)
             } catch (error: Throwable) {
                 throw GetActualFilePartException(cause = error)
             }
@@ -213,8 +216,9 @@ internal class FinalHeartbeats(
             }
             throw error
         } finally {
+            val request = DequeueRequest(serialNumber = serialNumber, id = id)
             try {
-                remotes.dequeue(serialNumber = serialNumber, id = id)
+                remotes.dequeue(request = request)
             } catch (error: Throwable) {
                 logger.warning("dequeue error: $error")
             }
