@@ -105,6 +105,7 @@ internal class FinalHeartbeats(
 
     private fun download(
         serialNumber: String,
+        packageName: String,
         id: String,
         dst: File,
     ) {
@@ -142,7 +143,8 @@ internal class FinalHeartbeats(
             if (read > response.fullLength) {
                 error("download wrong read length")
             }
-            _states.value = Heartbeats.State.DownloadingFile(
+            _states.value = Heartbeats.State.DownloadingPackage(
+                packageName = packageName,
                 contentLength = response.fullLength,
                 read = read,
             )
@@ -168,6 +170,7 @@ internal class FinalHeartbeats(
 
     private fun download(
         serialNumber: String,
+        packageName: String,
         id: String,
         sha256: ByteArray,
     ): File {
@@ -178,7 +181,7 @@ internal class FinalHeartbeats(
         }
         val tmp = getPackageFile(dir = dir, id = id)
         try {
-            download(serialNumber = serialNumber, id = id, dst = tmp)
+            download(serialNumber = serialNumber, packageName = packageName, id = id, dst = tmp)
         } catch (error: Throwable) {
             when (error) {
                 is HeartbeatsTTLException -> Unit
@@ -292,7 +295,12 @@ internal class FinalHeartbeats(
                 }
             }
             val file = try {
-                download(serialNumber = serialNumber, id = pu.id, sha256 = pu.sha256)
+                download(
+                    serialNumber = serialNumber,
+                    packageName = pu.packageName,
+                    id = pu.id,
+                    sha256 = pu.sha256,
+                )
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
                 continue
