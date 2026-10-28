@@ -17,7 +17,6 @@ import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequestException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
-import org.stansamples.filesupdating.entity.PackageUpdate
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.util.hex
 import java.io.File
@@ -27,7 +26,6 @@ import java.io.OutputStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 internal class FinalHeartbeats(
     private val dirs: Dirs,

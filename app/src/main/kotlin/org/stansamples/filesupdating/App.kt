@@ -29,16 +29,16 @@ fun main() {
         default = Dispatchers.Default,
     )
     val dirs: Dirs = FinalDirs()
-    val loggers: Loggers = FinalLoggers()
-    val remotes: Remotes = FinalRemotes()
-    val secrets: Secrets = FinalSecrets()
-    val times: Times = FinalTimes()
-    val packages: Packages = FinalPackages()
     val locals: Locals = FinalLocals(
         dcTimeout = 32.seconds,
         serialNumber = "foobarbaz",
         ttl = 4.seconds,
     )
+    val loggers: Loggers = FinalLoggers()
+    val packages: Packages = FinalPackages()
+    val remotes: Remotes = FinalRemotes()
+    val secrets: Secrets = FinalSecrets()
+    val times: Times = FinalTimes()
     val heartbeats: Heartbeats = FinalHeartbeats(
         contexts = contexts,
         dirs = dirs,
