@@ -7,4 +7,5 @@ internal class FinalLocals : Locals {
     override val dcTimeout: Duration? = Mocks.dcTimeout
     override val serialNumber: String? = Mocks.serialNumber
     override val ttl: Duration = Mocks.ttl
+    override val filePartSize: Long = Mocks.filePartSize
 }

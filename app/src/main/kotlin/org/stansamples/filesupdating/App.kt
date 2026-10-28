@@ -48,7 +48,7 @@ fun main() {
     runBlocking {
         withContext(contexts.default) {
             heartbeats.start()
-            delay(10.seconds)
+            delay(30.seconds)
             heartbeats.stop()
         }
     }

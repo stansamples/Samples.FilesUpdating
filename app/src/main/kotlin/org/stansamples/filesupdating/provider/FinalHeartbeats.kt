@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.stansamples.filesupdating.entity.AppInfo
 import org.stansamples.filesupdating.entity.DequeueRequest
-import org.stansamples.filesupdating.entity.GetActualFilePartException
+import org.stansamples.filesupdating.entity.GetFilePartException
 import org.stansamples.filesupdating.entity.GetFilePartRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequestException
@@ -114,17 +114,17 @@ internal class FinalHeartbeats(
     ) {
         var _index = dst.length()
         var _fullLength: Long? = null
-        val partSize = 64_000_000L
+        val filePartSize = locals.filePartSize
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
             if (expires()) throw HeartbeatsTTLException()
-            val range = LongRange(_index, _index + partSize - 1)
+            val range = LongRange(_index, _index + filePartSize - 1)
             if (range.isEmpty()) error("download empty range")
             val request = GetFilePartRequest(serialNumber = serialNumber, id = id, range = range)
             val response = try {
                 remotes.getFilePart(request = request)
             } catch (error: Throwable) {
-                throw GetActualFilePartException(cause = error)
+                throw GetFilePartException(cause = error)
             }
             response.body.use { body ->
                 if (_fullLength == null) {
@@ -209,7 +209,7 @@ internal class FinalHeartbeats(
         } catch (error: Throwable) {
             when (error) {
                 is HeartbeatsTTLException -> Unit
-                is GetActualFilePartException -> {
+                is GetFilePartException -> {
                     if (error.cause is RangeNotSatisfiableException) tmp.delete()
                 }
                 else -> tmp.delete()

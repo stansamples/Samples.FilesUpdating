@@ -22,7 +22,8 @@ internal object Mocks {
         )
     }
     val dcTimeout: Duration? = null
-    val ttl: Duration = 4.seconds
+    val ttl: Duration = 8.seconds
+    val filePartSize: Long = 4
 
     fun getBytes(appInfo: AppInfo): ByteArray {
         val id = "${appInfo.packageName}-${appInfo.versionName}-${appInfo.versionCode}"

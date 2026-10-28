@@ -6,4 +6,5 @@ internal interface Locals {
     val dcTimeout: Duration?
     val serialNumber: String?
     val ttl: Duration
+    val filePartSize: Long
 }
