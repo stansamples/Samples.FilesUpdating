@@ -45,6 +45,7 @@ internal class FinalHeartbeats(
     private var _timeRequested: Duration? = null
     private var _timeStarted: Duration = Duration.ZERO
     private var _timeUpdated: Duration? = null
+    private var _lastError: Throwable? = null
     override val started = _started.asStateFlow()
     override val states = _states.asStateFlow()
 
@@ -57,6 +58,7 @@ internal class FinalHeartbeats(
                     _timeStarted = times.now()
                     _timeRequested = null
                     _timeUpdated = null
+                    _lastError = null
                     job = coroutineScope.launch {
                         while (_started.value) {
                             _states.value = Heartbeats.State.Updating
@@ -216,21 +218,22 @@ internal class FinalHeartbeats(
         }
         logger.debug("heartbeat request...")
         val lastRequested = _timeRequested
-        val lastUpdated = _timeUpdated
-        val lastFailure = lastRequested?.let {
-            lastUpdated == null || lastUpdated < lastRequested
-        }
         _timeRequested = times.now()
         val response = try {
             remotes.heartbeat(HeartbeatRequest(serialNumber = locals.serialNumber, apps = _apps))
         } catch (error: Throwable) {
+            _lastError = error
             throw HeartbeatRequestException(cause = error)
         }
-        if (lastFailure == true) {
+        val lastUpdated = _timeUpdated
+        val lastError = _lastError
+        if (lastError != null) {
+            _lastError = null
             val message = """
                 success after failure
-                last requested: ${lastRequested.inWholeMilliseconds}
+                last requested: ${lastRequested?.inWholeMilliseconds}
                 last updated: ${lastUpdated?.inWholeMilliseconds}
+                last error: $lastError
             """.trimIndent()
             logger.debug(message)
         }
