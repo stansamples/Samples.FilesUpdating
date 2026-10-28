@@ -83,7 +83,7 @@ internal class FinalHeartbeats(
         }
     }
 
-    private fun isExpired(requested: Duration? = _requested): Boolean {
+    private fun expires(requested: Duration? = _requested): Boolean {
         return requested != null && times.elapsed(requested) > ttl
     }
 
@@ -106,7 +106,7 @@ internal class FinalHeartbeats(
         val partSize = 64_000_000L
         while (true) {
             if (!_started.value) throw HeartbeatsStoppedException()
-            if (isExpired()) throw HeartbeatsTTLException()
+            if (expires()) throw HeartbeatsTTLException()
             val range = LongRange(_index, _index + partSize - 1)
             if (range.isEmpty()) error("download empty range")
             val response = try {
@@ -208,8 +208,7 @@ internal class FinalHeartbeats(
         val packageNames = _apps.mapTo(mutableSetOf()) { it.packageName }
         updateApps(packageNames = packageNames)
         logger.debug("heartbeat request...")
-        val requested = times.now()
-        _requested = requested
+        _requested = times.now()
         val response = try {
             remotes.heartbeat(HeartbeatRequest(serialNumber = serialNumber, apps = _apps))
         } catch (error: Throwable) {
@@ -218,7 +217,7 @@ internal class FinalHeartbeats(
         _updated = times.now()
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
-            if (isExpired(requested)) return
+            if (expires()) return
             _states.value = Heartbeats.State.Updating
             logger.debug("updating package: $pu")
             if (!packageNames.contains(pu.packageName)) {
