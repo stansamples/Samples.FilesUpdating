@@ -130,7 +130,7 @@ internal class FinalHeartbeats(
                     dst.write(src = body.src)
                 }
                 if (read != body.contentLength) {
-                    error("download wrong read length")
+                    error("download wrong read body length")
                 }
             }
             _index += response.body.contentLength
@@ -162,15 +162,15 @@ internal class FinalHeartbeats(
         return dir.resolve("${id}.apk")
     }
 
-    private fun download(pu: PackageUpdate): File {
+    private fun download(id: String, sha256: ByteArray): File {
         val dir = dirs.cache.resolve("packages")
         val target = dir.resolve("target.apk")
         if (target.exists() && !target.delete()) {
-            error("update cannot delete old target")
+            error("cannot delete old target")
         }
-        val tmp = getPackageFile(dir = dir, id = pu.id)
+        val tmp = getPackageFile(dir = dir, id = id)
         try {
-            download(id = pu.id, dst = tmp)
+            download(id = id, dst = tmp)
         } catch (error: Throwable) {
             when (error) {
                 is HeartbeatsTTLException -> Unit
@@ -181,13 +181,13 @@ internal class FinalHeartbeats(
             throw error
         } finally {
             try {
-                remotes.dequeue(serialNumber = locals.serialNumber, id = pu.id)
+                remotes.dequeue(serialNumber = locals.serialNumber, id = id)
             } catch (error: Throwable) {
                 logger.warning("dequeue error: $error")
             }
         }
         try {
-            commit(tmp = tmp, target = target, sha256 = pu.sha256)
+            commit(tmp = tmp, target = target, sha256 = sha256)
         } finally {
             tmp.delete()
         }
@@ -242,7 +242,7 @@ internal class FinalHeartbeats(
             if (!_started.value) return
             if (expires()) return
             _states.value = Heartbeats.State.Updating
-            logger.debug("updating package: $pu")
+            logger.debug("updating ${pu.packageName}")
             if (!packageNames.contains(pu.packageName)) {
                 val appInfo = try {
                     packages.getAppInfo(packageName = pu.packageName)
@@ -255,16 +255,16 @@ internal class FinalHeartbeats(
                 }
             }
             val file = try {
-                download(pu = pu)
+                download(id = pu.id, sha256 = pu.sha256)
             } catch (error: Throwable) {
-                logger.warning("download package error: $error")
+                logger.warning("download ${pu.packageName} error: $error")
                 continue
             }
             _states.value = Heartbeats.State.InstallingPackage
             packageNames += try {
                 packages.install(file = file)
             } catch (error: Throwable) {
-                logger.warning("install package error: $error")
+                logger.warning("install ${pu.packageName} error: $error")
                 continue
             }
         }
