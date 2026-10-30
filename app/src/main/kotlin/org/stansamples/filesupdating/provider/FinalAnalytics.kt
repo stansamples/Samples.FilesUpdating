@@ -5,11 +5,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.stansamples.filesupdating.entity.LogEvent
-import org.stansamples.filesupdating.util.dateFormat
-import org.stansamples.filesupdating.util.fmt
+import org.stansamples.filesupdating.util.duration
+import org.stansamples.filesupdating.util.formats
 import org.stansamples.filesupdating.util.hex
+import org.stansamples.filesupdating.util.string
 import org.stansamples.filesupdating.util.toBytes
-import java.text.ParseException
+import java.time.format.DateTimeParseException
 import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,8 +28,8 @@ internal class FinalAnalytics(
     loggers: Loggers,
 ) : Analytics {
     private val coroutineScope = CoroutineScope(contexts.io + SupervisorJob())
-    private val dirFormat = dateFormat(pattern = "yyyyMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
-    private val fileFormat = dateFormat(pattern = "yyyyMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+    private val dirFormats = formats(pattern = "yyyyMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+    private val fileFormats = formats(pattern = "yyyyMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
     private val indices = AtomicInteger(locals.launched.inWholeSeconds.toInt())
     private val locks = ReentrantReadWriteLock()
     private val logger = loggers.create("[Analytics]")
@@ -37,11 +38,11 @@ internal class FinalAnalytics(
         get() {
             val purpose = Analytics.Purpose.Events
             val date = times.now()
-            val fileName = "${purpose.name}_${fileFormat.fmt(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
+            val fileName = "${purpose.name}_${fileFormats.string(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
             val file = dirs.docs
                 .resolve(locals.packageName)
                 .resolve(purpose.name)
-                .resolve(dirFormat.fmt(date))
+                .resolve(dirFormats.string(date))
                 .resolve(fileName)
             return locks.readLock().withLock {
                 runCatching {
@@ -89,10 +90,10 @@ internal class FinalAnalytics(
             if (!dir.exists()) continue
             if (!dir.isDirectory) continue
             val then = try {
-                dirFormat.parse(dir.name)
-            } catch (_: ParseException) {
+                dirFormats.duration(dir.name)
+            } catch (_: DateTimeParseException) {
                 continue
-            }.time.milliseconds
+            }
             if (date.minus(then) > 14.days) {
                 dir.deleteRecursively()
                 logger.debug("delete: $dir")
@@ -101,11 +102,11 @@ internal class FinalAnalytics(
     }
 
     private fun report(purpose: Analytics.Purpose, event: LogEvent) {
-        val fileName = "${purpose.name}_${fileFormat.fmt(event.date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
+        val fileName = "${purpose.name}_${fileFormats.string(event.date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
         val dir = dirs.docs
             .resolve(locals.packageName)
             .resolve(purpose.name)
-            .resolve(dirFormat.fmt(event.date))
+            .resolve(dirFormats.string(event.date))
         if (!dir.exists()) {
             if (!dir.mkdirs() || !dir.exists()) TODO()
         }
