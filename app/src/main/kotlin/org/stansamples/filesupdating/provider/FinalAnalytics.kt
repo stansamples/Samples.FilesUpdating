@@ -28,8 +28,8 @@ internal class FinalAnalytics(
     loggers: Loggers,
 ) : Analytics {
     private val coroutineScope = CoroutineScope(contexts.io + SupervisorJob())
-    private val dirFormats = formats(pattern = "yyyyMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
-    private val fileFormats = formats(pattern = "yyyyMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+    private val dirFormats = formats(pattern = "uuuuMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+    private val fileFormats = formats(pattern = "uuuuMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
     private val indices = AtomicInteger(locals.launched.inWholeSeconds.toInt())
     private val locks = ReentrantReadWriteLock()
     private val logger = loggers.create("[Analytics]")
