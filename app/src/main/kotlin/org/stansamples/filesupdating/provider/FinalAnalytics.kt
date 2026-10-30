@@ -9,10 +9,13 @@ import org.stansamples.filesupdating.util.dateFormat
 import org.stansamples.filesupdating.util.fmt
 import org.stansamples.filesupdating.util.hex
 import org.stansamples.filesupdating.util.toBytes
+import java.text.ParseException
 import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class FinalAnalytics(
     private val dirs: Dirs,
@@ -45,7 +48,19 @@ internal class FinalAnalytics(
     }
 
     private fun check(purpose: Analytics.Purpose, date: Duration) {
-        // todo
+        for (dir in dirs.docs.resolve(locals.packageName).resolve(purpose.name).listFiles().orEmpty()) {
+            if (!dir.exists()) continue
+            if (!dir.isDirectory) continue
+            val then = try {
+                dirFormat.parse(dir.name)
+            } catch (_: ParseException) {
+                continue
+            }.time.milliseconds
+            if (date.minus(then) > 14.days) {
+                dir.deleteRecursively()
+                logger.debug("delete: $dir")
+            }
+        }
     }
 
     private fun report(purpose: Analytics.Purpose, event: LogEvent) {
