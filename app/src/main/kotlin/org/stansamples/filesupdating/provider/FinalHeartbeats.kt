@@ -72,6 +72,11 @@ internal class FinalHeartbeats(
                                 heartbeat()
                             } catch (error: Throwable) {
                                 logger.warning("heartbeat error: $error")
+                                val type = when (error) {
+                                    is HeartbeatRequestException -> LogEvent.Type.HeartbeatRequestError
+                                    else -> LogEvent.Type.HeartbeatsUnknownError
+                                }
+                                analytics.report(purpose = Analytics.Purpose.Events, type = type, error = error)
                                 if (error is HeartbeatRequestException) {
                                     _states.value = Heartbeats.State.Waiting(timeUpdated = _timeUpdated)
                                 } else {
@@ -269,6 +274,7 @@ internal class FinalHeartbeats(
         val dcTimeout = locals.dcTimeout
         if (dcTimeout != null && times.elapsed(_timeUpdated ?: _timeStarted) > dcTimeout) {
             logger.debug("dc timeout")
+            analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DisconnectTimeout)
             _started.value = false
             return
         }
@@ -284,7 +290,6 @@ internal class FinalHeartbeats(
         val lastUpdated = _timeUpdated
         val lastError = _lastError
         if (lastError != null) {
-            _lastError = null
             val message = """
                 success after failure
                 last requested: ${lastRequested?.inWholeMilliseconds}
@@ -292,13 +297,22 @@ internal class FinalHeartbeats(
                 last error: $lastError
             """.trimIndent()
             logger.debug(message)
+            _lastError = null
+            val payload = mapOf(
+                "lastRequested" to lastRequested?.inWholeMilliseconds.toString(),
+                "lastUpdated" to lastUpdated?.inWholeMilliseconds?.toString().orEmpty(),
+                "lastError" to lastError::class.java.name,
+            )
+            analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.HeartbeatsSuccessAfterFailure, payload = payload)
         }
         _timeUpdated = times.now()
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
             if (expires()) return
-            _states.value = Heartbeats.State.UpdatingPackage(packageName = pu.packageName, version = pu.version)
             logger.debug("updating ${pu.packageName}")
+            _states.value = Heartbeats.State.UpdatingPackage(packageName = pu.packageName, version = pu.version)
+            val payload = mapOf("packageName" to pu.packageName, "version" to pu.version)
+            analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.UpdatingPackage, payload = payload)
             if (!packageNames.contains(pu.packageName)) {
                 val appInfo = try {
                     packages.getAppInfo(packageName = pu.packageName)
@@ -320,6 +334,7 @@ internal class FinalHeartbeats(
                 )
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
+                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DownloadPackageError, error = error)
                 continue
             }
             packageNames += try {
@@ -330,6 +345,7 @@ internal class FinalHeartbeats(
                 )
             } catch (error: Throwable) {
                 logger.warning("install ${pu.packageName} error: $error")
+                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.InstallPackageError, error = error)
                 continue
             }
             updateApps(packageNames = packageNames)

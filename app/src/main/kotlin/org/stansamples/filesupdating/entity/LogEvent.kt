@@ -9,7 +9,14 @@ internal data class LogEvent(
     val payload: Map<String, String>,
 ) {
     enum class Type {
+        DisconnectTimeout,
+        DownloadPackageError,
+        HeartbeatRequestError,
+        HeartbeatsSuccessAfterFailure,
+        HeartbeatsUnknownError,
+        InstallPackageError,
         StartHeartbeat,
         StopHeartbeat,
+        UpdatingPackage,
     }
 }
