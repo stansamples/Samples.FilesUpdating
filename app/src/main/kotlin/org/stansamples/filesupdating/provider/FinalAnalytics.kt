@@ -30,7 +30,34 @@ internal class FinalAnalytics(
     private val dirFormat = dateFormat(pattern = "yyyyMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
     private val fileFormat = dateFormat(pattern = "yyyyMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
 
-    override val events: List<LogEvent> = emptyList() // todo
+    override val events: List<LogEvent>
+        get() {
+            val purpose = Analytics.Purpose.Events
+            val date = times.now()
+            val fileName = "${purpose.name}_${fileFormat.fmt(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
+            return dirs.docs
+                .resolve(locals.packageName)
+                .resolve(purpose.name)
+                .resolve(dirFormat.fmt(date))
+                .resolve(fileName)
+                .readLines()
+                .map { JSONObject(it).toLogEvent() }
+        }
+
+    private fun JSONObject.toLogEvent(): LogEvent {
+        val payload = mutableMapOf<String, String>()
+        optJSONObject("payload")?.let {
+            it.keys().forEach { key ->
+                payload[key] = it.getString(key)
+            }
+        }
+        return LogEvent(
+            id = getString("id"),
+            date = getLong("date").milliseconds,
+            type = LogEvent.Type.valueOf(getString("type")),
+            payload = payload,
+        )
+    }
 
     private fun LogEvent.toJSONObject(): JSONObject {
         val obj = JSONObject()

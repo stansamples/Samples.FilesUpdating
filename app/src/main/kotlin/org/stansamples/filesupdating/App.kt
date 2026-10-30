@@ -86,7 +86,9 @@ fun main() {
     runBlocking {
         withContext(contexts.default) {
             heartbeats.start()
-            delay(30.seconds)
+            delay(12.seconds)
+            logger.debug("events: ${analytics.events.size}")
+            delay(12.seconds)
             heartbeats.stop()
         }
         job.cancelAndJoin()
