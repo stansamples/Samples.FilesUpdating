@@ -21,4 +21,5 @@ tasks.register<JavaExec>("run") {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0")
+    implementation("org.json:json:20260814")
 }
