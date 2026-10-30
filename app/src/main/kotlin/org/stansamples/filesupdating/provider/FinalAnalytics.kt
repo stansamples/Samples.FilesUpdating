@@ -6,6 +6,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.stansamples.filesupdating.entity.LogEvent
 import org.stansamples.filesupdating.util.dateFormat
+import org.stansamples.filesupdating.util.fmt
 import org.stansamples.filesupdating.util.hex
 import org.stansamples.filesupdating.util.toBytes
 import java.util.Locale
@@ -14,9 +15,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
 internal class FinalAnalytics(
+    private val dirs: Dirs,
+    private val locals: Locals,
     private val times: Times,
     contexts: Contexts,
-    locals: Locals,
     loggers: Loggers,
 ) : Analytics {
     private val coroutineScope = CoroutineScope(contexts.io + SupervisorJob())
@@ -47,8 +49,18 @@ internal class FinalAnalytics(
     }
 
     private fun report(purpose: Analytics.Purpose, event: LogEvent) {
+        val fileName = "${purpose.name}_${fileFormat.fmt(event.date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
+        val dir = dirs.docs
+            .resolve(locals.packageName)
+            .resolve(purpose.name)
+            .resolve(dirFormat.fmt(event.date))
+        if (!dir.exists()) {
+            if (!dir.mkdirs() || !dir.exists()) TODO()
+        }
+        val file = dir.resolve(fileName)
+        logger.debug("file: ${file.absolutePath}")
         val text = StringBuilder(event.toJSONObject().toString()).append("\n")
-        // todo
+        file.appendText(text.toString())
     }
 
     override fun report(

@@ -10,4 +10,5 @@ internal class FinalLocals(
     override val serialNumber: String? = Mocks.serialNumber
     override val ttl: Duration = Mocks.ttl
     override val filePartSize: Long = Mocks.filePartSize
+    override val packageName: String = "org.stansamples.filesupdating.mock"
 }

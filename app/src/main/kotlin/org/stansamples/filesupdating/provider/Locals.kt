@@ -8,4 +8,5 @@ internal interface Locals {
     val ttl: Duration
     val filePartSize: Long
     val launched: Duration
+    val packageName: String
 }

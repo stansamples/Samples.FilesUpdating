@@ -46,6 +46,7 @@ fun main() {
     )
     val analytics: Analytics = FinalAnalytics(
         contexts = contexts,
+        dirs = dirs,
         locals = locals,
         loggers = loggers,
         times = times,
