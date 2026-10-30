@@ -5,8 +5,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.stansamples.filesupdating.entity.LogEvent
+import org.stansamples.filesupdating.util.dateFormat
 import org.stansamples.filesupdating.util.hex
 import org.stansamples.filesupdating.util.toBytes
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
@@ -19,6 +22,10 @@ internal class FinalAnalytics(
     private val coroutineScope = CoroutineScope(contexts.io + SupervisorJob())
     private val indices = AtomicInteger(locals.launched.inWholeSeconds.toInt())
     private val logger = loggers.create("[Analytics]")
+    private val dirFormat = dateFormat(pattern = "yyyyMMdd", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+    private val fileFormat = dateFormat(pattern = "yyyyMMddHH", locale = Locale.US, timeZone = TimeZone.getTimeZone("utc"))
+
+    override val events: List<LogEvent> = emptyList() // todo
 
     private fun LogEvent.toJSONObject(): JSONObject {
         val obj = JSONObject()
@@ -40,6 +47,7 @@ internal class FinalAnalytics(
     }
 
     private fun report(purpose: Analytics.Purpose, event: LogEvent) {
+        val text = StringBuilder(event.toJSONObject().toString()).append("\n")
         // todo
     }
 

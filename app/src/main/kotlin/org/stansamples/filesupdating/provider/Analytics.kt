@@ -7,6 +7,8 @@ internal interface Analytics {
         Events,
     }
 
+    val events: List<LogEvent>
+
     fun report(purpose: Purpose, type: LogEvent.Type, payload: Map<String, String> = emptyMap())
     fun report(purpose: Purpose, type: LogEvent.Type, error: Throwable)
 }

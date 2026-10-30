@@ -9,4 +9,10 @@ internal class FinalDirs : Dirs {
             if (!it.mkdirs()) TODO()
         }
     }
+
+    override val docs = root.resolve(".local").resolve("share").also {
+        if (!it.exists()) {
+            if (!it.mkdirs()) TODO()
+        }
+    }
 }
