@@ -8,8 +8,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.stansamples.filesupdating.provider.Analytics
 import org.stansamples.filesupdating.provider.Contexts
 import org.stansamples.filesupdating.provider.Dirs
+import org.stansamples.filesupdating.provider.FinalAnalytics
 import org.stansamples.filesupdating.provider.FinalDirs
 import org.stansamples.filesupdating.provider.FinalHeartbeats
 import org.stansamples.filesupdating.provider.FinalLocals
@@ -39,7 +41,11 @@ fun main() {
     val remotes: Remotes = FinalRemotes()
     val secrets: Secrets = FinalSecrets()
     val times: Times = FinalTimes()
+    val analytics: Analytics = FinalAnalytics(
+        times = times,
+    )
     val heartbeats: Heartbeats = FinalHeartbeats(
+        analytics = analytics,
         contexts = contexts,
         dirs = dirs,
         locals = locals,

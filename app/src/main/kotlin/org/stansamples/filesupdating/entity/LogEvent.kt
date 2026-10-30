@@ -9,7 +9,7 @@ internal data class LogEvent(
     val payload: Map<String, String>,
 ) {
     enum class Type {
-        ;
-        val code: Byte = ordinal.toByte()
+        StartHeartbeat,
+        StopHeartbeat,
     }
 }

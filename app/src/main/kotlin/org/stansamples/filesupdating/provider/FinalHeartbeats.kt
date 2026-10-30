@@ -19,6 +19,7 @@ import org.stansamples.filesupdating.entity.HeartbeatRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequestException
 import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
+import org.stansamples.filesupdating.entity.LogEvent
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
 import org.stansamples.filesupdating.util.hex
 import org.stansamples.filesupdating.util.write
@@ -29,6 +30,7 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class FinalHeartbeats(
+    private val analytics: Analytics,
     private val dirs: Dirs,
     private val locals: Locals,
     private val packages: Packages,
@@ -57,6 +59,7 @@ internal class FinalHeartbeats(
             _started.drop(1).collect { newState ->
                 logger.debug("started: $newState")
                 if (newState) {
+                    analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.StartHeartbeat)
                     _lastError = null
                     _timeRequested = null
                     _timeStarted = times.now()
@@ -81,6 +84,7 @@ internal class FinalHeartbeats(
                         }
                     }
                 } else {
+                    analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.StopHeartbeat)
                     job?.cancelAndJoin()
                     _states.value = Heartbeats.State.Stopped
                 }
