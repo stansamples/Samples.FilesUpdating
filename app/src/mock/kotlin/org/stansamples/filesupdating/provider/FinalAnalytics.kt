@@ -13,7 +13,7 @@ internal class FinalAnalytics(
         payload: Map<String, String>,
     ) {
         val event = LogEvent(
-            id = _indices.inc().toString(),
+            id = (_indices++).toString(),
             date = times.now(),
             type = type,
             payload = payload,

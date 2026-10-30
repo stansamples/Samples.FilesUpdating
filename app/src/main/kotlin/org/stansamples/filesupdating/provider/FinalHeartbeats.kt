@@ -332,6 +332,8 @@ internal class FinalHeartbeats(
                     id = pu.id,
                     sha256 = pu.sha256,
                 )
+            } catch (_: HeartbeatsTTLException) {
+                continue
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
                 analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DownloadPackageError, error = error)
