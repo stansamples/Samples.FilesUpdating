@@ -33,15 +33,21 @@ fun main() {
     val contexts = Contexts(
         main = Dispatchers.Default,
         default = Dispatchers.Default,
+        io = Dispatchers.IO,
     )
     val dirs: Dirs = FinalDirs()
-    val locals: Locals = FinalLocals()
     val loggers: Loggers = FinalLoggers()
     val packages: Packages = FinalPackages()
     val remotes: Remotes = FinalRemotes()
     val secrets: Secrets = FinalSecrets()
     val times: Times = FinalTimes()
+    val locals: Locals = FinalLocals(
+        launched = times.now(),
+    )
     val analytics: Analytics = FinalAnalytics(
+        contexts = contexts,
+        locals = locals,
+        loggers = loggers,
         times = times,
     )
     val heartbeats: Heartbeats = FinalHeartbeats(

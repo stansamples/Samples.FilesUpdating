@@ -7,4 +7,5 @@ internal interface Locals {
     val serialNumber: String?
     val ttl: Duration
     val filePartSize: Long
+    val launched: Duration
 }

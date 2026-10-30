@@ -15,3 +15,16 @@ internal fun ByteArray.hex(locale: Locale = Locale.US): String {
     }
     return builder.toString()
 }
+
+internal fun ByteArray.write(index: Int = 0, value: Int) {
+    set(index, value.shr(24).toByte())
+    set(index + 1, value.shr(16).toByte())
+    set(index + 2, value.shr(8).toByte())
+    set(index + 3, value.toByte())
+}
+
+internal fun Int.toBytes(): ByteArray {
+    val bytes = ByteArray(4)
+    bytes.write(value = this)
+    return bytes
+}
