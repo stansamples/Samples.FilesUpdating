@@ -297,22 +297,22 @@ internal class FinalHeartbeats(
                 last error: $lastError
             """.trimIndent()
             logger.debug(message)
-            _lastError = null
             val payload = mapOf(
                 "lastRequested" to lastRequested?.inWholeMilliseconds.toString(),
                 "lastUpdated" to lastUpdated?.inWholeMilliseconds?.toString().orEmpty(),
                 "lastError" to lastError::class.java.name,
             )
             analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.HeartbeatsSuccessAfterFailure, payload = payload)
+            _lastError = null
         }
         _timeUpdated = times.now()
         for (pu in response.needsPackagesUpdate) {
             if (!_started.value) return
             if (expires()) return
             logger.debug("updating ${pu.packageName}")
-            _states.value = Heartbeats.State.UpdatingPackage(packageName = pu.packageName, version = pu.version)
             val payload = mapOf("packageName" to pu.packageName, "version" to pu.version)
             analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.UpdatingPackage, payload = payload)
+            _states.value = Heartbeats.State.UpdatingPackage(packageName = pu.packageName, version = pu.version)
             if (!packageNames.contains(pu.packageName)) {
                 val appInfo = try {
                     packages.getAppInfo(packageName = pu.packageName)
@@ -333,7 +333,7 @@ internal class FinalHeartbeats(
                     sha256 = pu.sha256,
                 )
             } catch (_: HeartbeatsTTLException) {
-                continue
+                return
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
                 analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DownloadPackageError, error = error)
