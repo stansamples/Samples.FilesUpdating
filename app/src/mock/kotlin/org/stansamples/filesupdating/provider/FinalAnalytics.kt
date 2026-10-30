@@ -5,9 +5,7 @@ import org.stansamples.filesupdating.entity.LogEvent
 internal class FinalAnalytics(
     private val times: Times,
 ) : Analytics {
-    private val _events = mutableListOf<LogEvent>()
     private var _indices = 0
-    override val events = _events
 
     override fun report(
         purpose: Analytics.Purpose,
@@ -20,7 +18,7 @@ internal class FinalAnalytics(
             type = type,
             payload = payload,
         )
-        _events.add(event)
+        // todo
     }
 
     override fun report(
