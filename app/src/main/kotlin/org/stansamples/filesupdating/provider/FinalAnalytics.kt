@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class FinalAnalytics(
@@ -37,22 +38,36 @@ internal class FinalAnalytics(
     override val events: List<LogEvent>
         get() {
             val purpose = Analytics.Purpose.Events
-            val date = times.now()
-            val fileName = "${purpose.name}_${fileFormats.string(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
-            val file = dirs.docs
+            val now = times.now()
+            val dir = dirs.docs
                 .resolve(locals.packageName)
                 .resolve(purpose.name)
-                .resolve(dirFormats.string(date))
-                .resolve(fileName)
-            return locks.readLock().withLock {
-                runCatching {
-                    file.useLines { lines ->
-                        lines.map {
-                            JSONObject(it).toLogEvent()
-                        }.toList()
+                .resolve(dirFormats.string(now))
+            if (!dir.exists()) return emptyList()
+            val result = mutableListOf<LogEvent>()
+            locks.readLock().withLock {
+                for (i in 0 until 8) {
+                    val date = now - 7.minus(i).hours
+                    val fileName = "${purpose.name}_${fileFormats.string(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
+                    val file = dir.resolve(fileName)
+                    if (!file.exists()) continue
+                    try {
+                        file.useLines { lines ->
+                            for (line in lines) {
+                                val event = try {
+                                    JSONObject(line).toLogEvent()
+                                } catch (_: Throwable) {
+                                    continue
+                                }
+                                result.add(event)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                        // ignored
                     }
-                }.getOrNull().orEmpty()
+                }
             }
+            return result
         }
 
     private fun JSONObject.toLogEvent(): LogEvent {
