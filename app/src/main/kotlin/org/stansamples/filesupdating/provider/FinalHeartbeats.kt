@@ -96,6 +96,15 @@ internal class FinalHeartbeats(
                 }
             }
         }
+        coroutineScope.launch {
+            var oldState: Heartbeats.State? = null
+            _states.collect { newState ->
+                if (oldState == null || !newState::class.java.isInstance(oldState)) {
+                    oldState = newState
+                    logger.debug("state: $newState")
+                }
+            }
+        }
     }
 
     private fun expires(timeRequested: Duration? = _timeRequested): Boolean {
