@@ -158,13 +158,26 @@ internal class FinalAnalytics(
     override fun report(
         purpose: Analytics.Purpose,
         type: LogEvent.Type,
+        payload: Map<String, String>,
         error: Throwable,
     ) {
-        val payload = mutableMapOf<String, String>()
-        payload["error"] = error::class.java.name
+        val _payload = payload.toMutableMap()
+        _payload["error"] = error::class.java.name
         error.cause?.also {
-            payload["cause"] = it::class.java.name
+            _payload["cause"] = it::class.java.name
         }
-        report(purpose = purpose, type = type, payload = payload)
+        report(purpose = purpose, type = type, payload = _payload)
+    }
+
+    override fun report(
+        purpose: Analytics.Purpose,
+        type: LogEvent.Type,
+        error: Throwable,
+    ) {
+        report(purpose = purpose, type = type, payload = emptyMap(), error = error)
+    }
+
+    override fun report(purpose: Analytics.Purpose, type: LogEvent.Type) {
+        report(purpose = purpose, type = type, payload = emptyMap())
     }
 }
