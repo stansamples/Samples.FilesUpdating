@@ -161,11 +161,12 @@ internal class FinalAnalytics(
         payload: Map<String, String>,
         error: Throwable,
     ) {
-        val _payload = payload.toMutableMap()
+        val _payload = mutableMapOf<String, String>()
         _payload["error"] = error::class.java.name
         error.cause?.also {
             _payload["cause"] = it::class.java.name
         }
+        _payload += payload
         report(purpose = purpose, type = type, payload = _payload)
     }
 
