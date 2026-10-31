@@ -9,4 +9,5 @@ internal interface Locals {
     val filePartSize: Long
     val launched: Duration
     val packageName: String
+    val orders: Map<String, Int>
 }

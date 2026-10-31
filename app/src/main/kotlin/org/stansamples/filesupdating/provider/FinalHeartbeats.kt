@@ -311,7 +311,7 @@ internal class FinalHeartbeats(
             _lastError = null
         }
         _timeUpdated = times.now()
-        for (pu in response.needsPackagesUpdate) {
+        for (pu in response.needsPackagesUpdate.sortedByDescending { locals.orders.getOrDefault(it.packageName, 0) }) {
             if (!_started.value) return
             if (expires()) return
             logger.debug("updating ${pu.packageName}")

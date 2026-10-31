@@ -5,6 +5,7 @@ import kotlin.time.Duration
 
 internal class FinalLocals(
     override val launched: Duration,
+    override val orders: Map<String, Int>,
 ) : Locals {
     override val dcTimeout: Duration? = Mocks.dcTimeout
     override val serialNumber: String? = Mocks.serialNumber

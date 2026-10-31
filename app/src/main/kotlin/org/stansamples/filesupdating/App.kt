@@ -43,6 +43,7 @@ fun main() {
     val times: Times = FinalTimes()
     val locals: Locals = FinalLocals(
         launched = times.now(),
+        orders = mapOf("foo.bar.baz" to 1),
     )
     val analytics: Analytics = FinalAnalytics(
         contexts = contexts,
