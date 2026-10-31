@@ -278,11 +278,11 @@ internal class FinalHeartbeats(
             _started.value = false
             return
         }
-        logger.debug("heartbeat request...")
         val lastRequested = _timeRequested
         _timeRequested = times.now()
+        val request = HeartbeatRequest(serialNumber = serialNumber, apps = _apps)
         val response = try {
-            remotes.heartbeat(HeartbeatRequest(serialNumber = serialNumber, apps = _apps))
+            remotes.heartbeat(request = request)
         } catch (error: Throwable) {
             _lastError = error
             throw HeartbeatRequestException(cause = error)
