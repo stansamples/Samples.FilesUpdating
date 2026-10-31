@@ -13,11 +13,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.stansamples.filesupdating.entity.AppInfo
 import org.stansamples.filesupdating.entity.DequeueRequest
-import org.stansamples.filesupdating.entity.GetFilePartException
 import org.stansamples.filesupdating.entity.GetFilePartRequest
 import org.stansamples.filesupdating.entity.HeartbeatRequest
-import org.stansamples.filesupdating.entity.HeartbeatRequestException
-import org.stansamples.filesupdating.entity.HeartbeatsStoppedException
 import org.stansamples.filesupdating.entity.HeartbeatsTTLException
 import org.stansamples.filesupdating.entity.LogEvent
 import org.stansamples.filesupdating.entity.RangeNotSatisfiableException
@@ -52,6 +49,10 @@ internal class FinalHeartbeats(
     private var _timeUpdated: Duration? = null
     override val started = _started.asStateFlow()
     override val states = _states.asStateFlow()
+
+    private class GetFilePartException(cause: Throwable) : Exception(cause)
+    private class HeartbeatRequestException(cause: Throwable) : Exception(cause)
+    private class HeartbeatsStoppedException : Exception()
 
     init {
         coroutineScope.launch {
