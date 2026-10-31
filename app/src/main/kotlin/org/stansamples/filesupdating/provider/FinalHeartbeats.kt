@@ -230,7 +230,7 @@ internal class FinalHeartbeats(
         return target
     }
 
-    private fun install(
+    private suspend fun install(
         file: File,
         expectedPackageName: String,
         expectedVersion: String,
@@ -258,6 +258,7 @@ internal class FinalHeartbeats(
         }
         return packages.install(
             file = file,
+            started = started,
             listener = listener,
             expectedPackageName = expectedPackageName,
             expectedVersion = expectedVersion,
@@ -277,7 +278,7 @@ internal class FinalHeartbeats(
         _apps = apps
     }
 
-    private fun heartbeat() {
+    private suspend fun heartbeat() {
         val serialNumber = locals.serialNumber ?: error("No serial number!")
         val packageNames = _apps.mapTo(mutableSetOf()) { it.packageName }
         updateApps(packageNames = packageNames)

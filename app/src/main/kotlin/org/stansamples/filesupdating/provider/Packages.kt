@@ -1,5 +1,6 @@
 package org.stansamples.filesupdating.provider
 
+import kotlinx.coroutines.flow.StateFlow
 import org.stansamples.filesupdating.entity.AppInfo
 import java.io.File
 
@@ -10,8 +11,9 @@ internal interface Packages {
         fun onFinishInstall(packageName: String)
     }
 
-    fun install(
+    suspend fun install(
         file: File,
+        started: StateFlow<Boolean>,
         listener: InstallListener,
         expectedPackageName: String,
         expectedVersion: String,

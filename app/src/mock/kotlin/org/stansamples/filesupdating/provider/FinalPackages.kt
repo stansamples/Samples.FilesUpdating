@@ -1,12 +1,16 @@
 package org.stansamples.filesupdating.provider
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import org.stansamples.filesupdating.Mocks
 import org.stansamples.filesupdating.entity.AppInfo
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 internal class FinalPackages : Packages {
-    override fun install(
+    override suspend fun install(
         file: File,
+        started: StateFlow<Boolean>,
         listener: Packages.InstallListener,
         expectedPackageName: String,
         expectedVersion: String,
@@ -17,13 +21,14 @@ internal class FinalPackages : Packages {
         val actual = file.readBytes()
         if (!expected.contentEquals(actual)) TODO("Wrong file!")
         listener.onStartInstall(packageName = appInfo.packageName)
-        Thread.sleep(1_000)
+        delay(1.seconds)
         file.inputStream().use { src ->
             val buffer = ByteArray(14)
             var read = 0L
             while (true) {
+                if (!started.value) error("install ${appInfo.packageName} stopped")
                 val length = src.read(buffer)
-                Thread.sleep(1_000)
+                delay(1.seconds)
                 if (length < 0) break
                 read += length
                 listener.onProgress(packageName = appInfo.packageName, fullLength = actual.size.toLong(), read = read)
@@ -38,7 +43,7 @@ internal class FinalPackages : Packages {
         }
         Mocks.installed += appInfo
         listener.onFinishInstall(packageName = appInfo.packageName)
-        Thread.sleep(1_000)
+        delay(1.seconds)
         return appInfo.packageName
     }
 
