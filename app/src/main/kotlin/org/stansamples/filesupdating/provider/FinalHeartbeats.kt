@@ -290,13 +290,7 @@ internal class FinalHeartbeats(
         val lastUpdated = _timeUpdated
         val lastError = _lastError
         if (lastError != null) {
-            val message = """
-                success after failure
-                last requested: ${lastRequested?.inWholeMilliseconds}
-                last updated: ${lastUpdated?.inWholeMilliseconds}
-                last error: $lastError
-            """.trimIndent()
-            logger.debug(message)
+            logger.debug("success after failure")
             val payload = mapOf(
                 "lastRequested" to lastRequested?.inWholeMilliseconds.toString(),
                 "lastUpdated" to lastUpdated?.inWholeMilliseconds?.toString().orEmpty(),
@@ -336,7 +330,8 @@ internal class FinalHeartbeats(
                 return
             } catch (error: Throwable) {
                 logger.warning("download ${pu.packageName} error: $error")
-                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DownloadPackageError, error = error)
+                val payload = mapOf("packageName" to pu.packageName, "version" to pu.version)
+                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.DownloadPackageError, payload = payload, error = error)
                 continue
             }
             packageNames += try {
@@ -347,7 +342,8 @@ internal class FinalHeartbeats(
                 )
             } catch (error: Throwable) {
                 logger.warning("install ${pu.packageName} error: $error")
-                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.InstallPackageError, error = error)
+                val payload = mapOf("packageName" to pu.packageName, "version" to pu.version)
+                analytics.report(purpose = Analytics.Purpose.Events, type = LogEvent.Type.InstallPackageError, payload = payload, error = error)
                 continue
             }
             updateApps(packageNames = packageNames)
