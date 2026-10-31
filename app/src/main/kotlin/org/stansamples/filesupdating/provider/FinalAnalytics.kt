@@ -39,17 +39,16 @@ internal class FinalAnalytics(
         get() {
             val purpose = Analytics.Purpose.Events
             val now = times.now()
-            val dir = dirs.docs
-                .resolve(locals.packageName)
-                .resolve(purpose.name)
-                .resolve(dirFormats.string(now))
-            if (!dir.exists()) return emptyList()
             val result = mutableListOf<LogEvent>()
             locks.readLock().withLock {
                 for (i in 0 until 8) {
                     val date = now - 7.minus(i).hours
                     val fileName = "${purpose.name}_${fileFormats.string(date)}_${locals.launched.inWholeSeconds.toInt().toBytes().hex()}.jsonl"
-                    val file = dir.resolve(fileName)
+                    val file = dirs.docs
+                        .resolve(locals.packageName)
+                        .resolve(purpose.name)
+                        .resolve(dirFormats.string(date))
+                        .resolve(fileName)
                     if (!file.exists()) continue
                     try {
                         file.useLines { lines ->
